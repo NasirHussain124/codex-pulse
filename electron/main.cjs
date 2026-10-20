@@ -14,6 +14,9 @@ protocol.registerSchemesAsPrivileged([{ scheme: 'pulse', privileges: { standard:
 const smoke = process.argv.includes('--smoke');
 const lifecycleId = process.argv.find(arg => arg.startsWith('--lifecycle-test='))?.split('=')[1];
 const lifecycle = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(lifecycleId || '');
+// Hosted Windows runners may not have a hardware-backed graphics surface.
+// Only isolated QA profiles use software rendering; normal launches are unchanged.
+if ((smoke || lifecycle) && process.env.CI === 'true') app.disableHardwareAcceleration();
 if (smoke || lifecycle) app.setPath('userData', path.join(app.getPath('temp'), lifecycle ? `pulse-lifecycle-${lifecycleId}` : `pulse-smoke-${process.pid}`));
 const demo = process.argv.includes('--demo') || smoke;
 const primaryInstance = app.requestSingleInstanceLock();

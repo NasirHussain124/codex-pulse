@@ -22,7 +22,8 @@ async function runSmoke({ app, window, createWindow }) {
   try {
     await pause(400);
     await js(`document.documentElement.style.setProperty('--drawer-motion', '0s')`);
-    const initial = await js(`({ cards: document.querySelectorAll('[data-account-card]').length, title: document.body.innerText.includes('All accounts'), bridge: typeof window.pulse?.getState === 'function', visible: [...document.querySelectorAll('[data-account-card]')].every(row => row.getBoundingClientRect().bottom <= innerHeight) })`);
+    const initial = await js(`({ cards: document.querySelectorAll('[data-account-card]').length, title: document.body.innerText.includes('All accounts'), bridge: typeof window.pulse?.getState === 'function', visible: [...document.querySelectorAll('[data-account-card]')].every(row => row.getBoundingClientRect().bottom <= innerHeight), width: innerWidth, height: innerHeight })`);
+    report.viewport = { width: initial.width, height: initial.height };
     report.fourAccounts = initial.cards === 4;
     report.secureBridge = initial.bridge;
     report.allFourVisible = initial.visible;
