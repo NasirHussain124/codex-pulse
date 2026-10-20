@@ -15,11 +15,22 @@ async function runSmoke({ app, window, createWindow }) {
     // Chromium can briefly reject a hidden-window capture while its GPU
     // surface is being initialized. Retry only that bounded observation.
     for (let attempt = 0; attempt < 3; attempt++) {
-      try { fs.writeFileSync(path.join(output, filename), (await win.webContents.capturePage()).toPNG()); return; }
+      try {
+        const size = await win.webContents.executeJavaScript('({ width: innerWidth, height: innerHeight })');
+        fs.writeFileSync(path.join(output, filename), (await win.webContents.capturePage({ x: 0, y: 0, ...size })).toPNG()); return;
+      }
       catch (error) { if (attempt === 2) throw error; await pause(200); }
     }
   };
   try {
+    // Hosted Windows provides a 1024x720 desktop and clamps native windows.
+    // Test the intended large CSS viewport explicitly, not the host monitor.
+    // Emulation is removed before the independent narrow-screen assertions.
+    if (process.env.CI === 'true') window.webContents.enableDeviceEmulation({
+      screenPosition: 'desktop', screenSize: { width: 1500, height: 1000 },
+      deviceScaleFactor: 1, viewPosition: { x: 0, y: 0 },
+      viewSize: { width: 1500, height: 1000 }, scale: 1,
+    });
     await pause(400);
     await js(`document.documentElement.style.setProperty('--drawer-motion', '0s')`);
     const initial = await js(`({ cards: document.querySelectorAll('[data-account-card]').length, title: document.body.innerText.includes('All accounts'), bridge: typeof window.pulse?.getState === 'function', visible: [...document.querySelectorAll('[data-account-card]')].every(row => row.getBoundingClientRect().bottom <= innerHeight), width: innerWidth, height: innerHeight })`);
@@ -127,6 +138,7 @@ async function runSmoke({ app, window, createWindow }) {
     await pause(300);
     report.widget = await widget.webContents.executeJavaScript(`document.querySelectorAll('[data-account-card]').length === 4 && [...document.querySelectorAll('[data-account-card]')].every(row => row.getBoundingClientRect().bottom <= innerHeight)`);
     await capture(widget, 'codex-pulse-widget.png'); widget.destroy();
+    if (process.env.CI === 'true') window.webContents.disableDeviceEmulation();
     window.setMinimumSize(360, 360); window.setSize(430, 900);
     await pause(250);
     report.narrowNoOverflow = await js(`document.documentElement.scrollWidth <= innerWidth + 1`);

@@ -23,6 +23,9 @@ Version 0.2.0, Windows x64 + Android. ccswap 0.39.2 remains the account/quota en
   closing/focus restoration, row/tab entry points, keyboard focus containment,
   Escape dismissal, and narrow dashboard/panel layouts.
   Phone-companion entry and sample-mode pairing boundaries are also checked.
+  Hosted Windows clamps native windows to its 1024x720 monitor; its wide-layout
+  check therefore uses an explicit 1500x1000 Chromium viewport. Emulation is
+  removed for the separate native narrow-window checks. No assertion is skipped.
 - New dropdown checks cover the actual dark menu color, pointer selection,
   Home/Enter keyboard selection, outside dismissal, containment in dialogs,
   Escape closing a dropdown without closing its account panel, and narrow-screen
