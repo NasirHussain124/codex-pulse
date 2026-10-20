@@ -10,7 +10,7 @@ public final class EndpointPolicy {
         String host = uri.getHost();
         if (!"https".equals(uri.getScheme()) || host == null || uri.getRawUserInfo() != null || uri.getQuery() != null || uri.getFragment() != null || uri.getPort() < 1 || uri.getPort() > 65535 || !(uri.getPath().isEmpty() || uri.getPath().equals("/"))) throw new IllegalArgumentException("Pairing requires a private HTTPS PC address.");
         String[] octets = host.split("\\.");
-        if (octets.length != 4) throw new IllegalArgumentException("Use a private IPv4 address from Pulse.");
+        if (octets.length != 4) throw new IllegalArgumentException("Use a private IPv4 address from Quota management.");
         int[] ip = new int[4];
         for (int i = 0; i < 4; i++) {
             if (!octets[i].matches("0|[1-9][0-9]{0,2}")) throw new IllegalArgumentException("Invalid private address.");

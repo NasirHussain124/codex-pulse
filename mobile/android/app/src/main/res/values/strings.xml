@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Codex Pulse</string>
+    <string name="app_name">Quota management</string>
     <string name="widget_description">Read-only Codex quota for your chosen accounts</string>
     <string name="widget_title">Your Codex widget</string>
     <string name="widget_help">Choose a quota window and accounts. Resize the widget to show more accounts. Leave all unchecked to show every account.</string>

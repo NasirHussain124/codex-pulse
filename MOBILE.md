@@ -1,4 +1,4 @@
-# Android companion — 0.2.0 release candidate
+# Android companion — 0.3.0 release candidate
 
 The companion only displays Codex quota. It cannot sign in to Codex, switch an
 account, change the vault, or close an application. No OpenAI tokens or passwords
@@ -9,7 +9,7 @@ are transferred to the phone. The desktop continues to use ccswap 0.39.2.
 1. Install the Android APK from this repository's private release on your phone.
    The development APK is debug-signed, not a Play Store production build.
 2. Connect the phone and PC to the same trusted private Wi-Fi/Ethernet network.
-3. In desktop Pulse, choose **Phone companion**, select the private PC address,
+3. In Quota management, choose **Phone companion**, select the private PC address,
    and enable the connection. If Windows asks, allow the private network only.
 4. Generate a QR code. In the Android app choose **Scan pairing QR**, inspect
    the confirmation, and pair. A copied pairing link is also supported.
@@ -20,7 +20,7 @@ are transferred to the phone. The desktop continues to use ccswap 0.39.2.
    Configure the accounts and 5-hour/7-day window. Resize it to fit more rows;
    extra accounts remain available in the app.
 
-Keep desktop Pulse running in the tray. After a full exit/restart, explicitly
+Keep Quota management running in the tray. After a full exit/restart, explicitly
 enable its private phone connection again. Device trust is retained, so a new
 QR is not required unless access was revoked or the certificate changed.
 

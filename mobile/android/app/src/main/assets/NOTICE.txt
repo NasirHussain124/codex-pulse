@@ -1,4 +1,4 @@
-Codex Pulse Android companion — independent project, not an official OpenAI app.
+Quota management Android companion — independent project, not an official OpenAI app.
 Application source is licensed under MIT; see the repository LICENSE.
 
 Runtime libraries include:

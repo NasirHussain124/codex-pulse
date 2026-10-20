@@ -9,6 +9,7 @@ async function runLifecycle({ app, window, createWindow, showDashboard, state })
   try {
     await waitFor(async () => await count(window) === 4);
     result.startupFromVault = state().snapshot.accounts.length === 4 && state().initialized;
+    result.rebrandedTitle = window.getTitle().startsWith('Quota management');
     result.initialAccounts = await count(window);
     window.close();
     result.closeHidesToTray = !window.isDestroyed() && !window.isVisible();
@@ -27,7 +28,7 @@ async function runLifecycle({ app, window, createWindow, showDashboard, state })
     result.noEmptySetup = !await window.webContents.executeJavaScript(`Boolean(document.querySelector('.empty-monitor'))`);
     result.mobileEncryptedPairing = await require('./mobile-smoke.cjs').testMobile(root, state);
     fs.writeFileSync(path.join(root, 'lifecycle-result.json'), JSON.stringify(result));
-    return result.mobileEncryptedPairing && result.startupFromVault && result.closeHidesToTray && result.noEmptySetup && [result.initialAccounts, result.accountsAfterReopen, result.accountsAfterReload, result.accountsInNewWindow].every(value => value === 4);
+    return result.rebrandedTitle && result.mobileEncryptedPairing && result.startupFromVault && result.closeHidesToTray && result.noEmptySetup && [result.initialAccounts, result.accountsAfterReopen, result.accountsAfterReload, result.accountsInNewWindow].every(value => value === 4);
   } catch (error) { fs.writeFileSync(path.join(root, 'lifecycle-result.json'), JSON.stringify({ ...result, error: error.message })); return false; }
 }
 module.exports = { runLifecycle };

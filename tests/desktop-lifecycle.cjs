@@ -16,7 +16,8 @@ const executable = process.argv[2] ? path.resolve(process.argv[2]) : require('el
 const packaged = Boolean(process.argv[2]);
 const run = () => new Promise((resolve, reject) => {
   const child = spawn(executable, [...(packaged ? [] : [project]), `--lifecycle-test=${session}`], { windowsHide: true, stdio: 'ignore', env: process.env });
-  const timer = setTimeout(() => { child.kill(); reject(new Error('Lifecycle test timed out.')); }, 30000);
+  // Frozen sidecar cold starts can be slow while Windows scans a fresh package.
+  const timer = setTimeout(() => { child.kill(); reject(new Error('Lifecycle test timed out.')); }, 90000);
   child.once('error', error => { clearTimeout(timer); reject(error); });
   child.once('exit', code => { clearTimeout(timer); code === 0 ? resolve() : reject(new Error(`Lifecycle process exited ${code}`)); });
 });

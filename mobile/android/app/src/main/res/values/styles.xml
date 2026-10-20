@@ -1,7 +1,7 @@
 <resources>
     <style name="PulseTheme" parent="android:style/Theme.Material.NoActionBar">
-        <item name="android:fontFamily">sans</item><item name="android:colorAccent">#B4CBA0</item>
+        <item name="android:fontFamily">sans</item><item name="android:colorAccent">#D4C3F3</item>
         <item name="android:windowLightStatusBar">false</item>
-        <item name="android:windowBackground">#141511</item><item name="android:statusBarColor">#141511</item><item name="android:navigationBarColor">#141511</item>
+        <item name="android:windowBackground">#252536</item><item name="android:statusBarColor">#252536</item><item name="android:navigationBarColor">#252536</item>
     </style>
 </resources>

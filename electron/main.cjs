@@ -8,8 +8,10 @@ const { createStore } = require('./store.cjs');
 const { LoginManager, DEVICE_URL } = require('./login.cjs');
 const { loadLocalAccounts, validSnapshot } = require('./bootstrap.cjs');
 const { MobileBridge } = require('./mobile.cjs');
+const { APP_NAME, userDataPath } = require('./branding.cjs');
 
 app.setAppUserModelId('com.codexpulse.desktop');
+app.setPath('userData', userDataPath(app.getPath('appData')));
 protocol.registerSchemesAsPrivileged([{ scheme: 'pulse', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
 const smoke = process.argv.includes('--smoke');
 const lifecycleId = process.argv.find(arg => arg.startsWith('--lifecycle-test='))?.split('=')[1];
@@ -38,7 +40,7 @@ function writeHealth(view = {}) {
 function publish() {
   revision++;
   for (const win of BrowserWindow.getAllWindows()) if (!win.isDestroyed()) win.webContents.send('pulse:changed', state());
-  tray?.setToolTip(`Codex Pulse · ${snapshot.accounts.length} saved accounts`);
+  tray?.setToolTip(`${APP_NAME} · ${snapshot.accounts.length} saved accounts`);
   writeHealth();
 }
 function event(kind, title) {
@@ -101,8 +103,8 @@ function createWindow(widget = false) {
   const width = widget ? 420 : smoke || lifecycle ? 1500 : Math.min(1500, area.width - 28);
   const height = widget ? 590 : smoke || lifecycle ? 1000 : Math.min(1000, area.height - 28);
   const win = new BrowserWindow({ width, height,
-    minWidth: widget ? 350 : Math.min(980, width), minHeight: widget ? 360 : Math.min(720, height), title: widget ? 'Codex Pulse Widget' : 'Codex Pulse',
-    show: false, autoHideMenuBar: true, backgroundColor: '#141311',
+    minWidth: widget ? 350 : Math.min(980, width), minHeight: widget ? 360 : Math.min(720, height), title: widget ? `${APP_NAME} · Widget` : APP_NAME,
+    show: false, autoHideMenuBar: true, backgroundColor: widget ? '#252536' : '#141311',
     alwaysOnTop: widget && store.settings.widgetTop, icon: path.join(__dirname, '..', 'dist', 'pulse.ico'),
     webPreferences: { preload: path.join(__dirname, 'preload.cjs'), nodeIntegration: false, contextIsolation: true, sandbox: true, webSecurity: true, backgroundThrottling: !(smoke || lifecycle) } });
   secureWindow(win);
@@ -216,7 +218,7 @@ app.whenReady().then(async () => {
     const result = await operation('switch', { id: id(value) });
     event('switch', 'Selected an account for the next Codex launch'); publish(); return state();
   });
-  handle('pulse:remove', async (value) => { await operation('remove', { id: id(value) }); event('account', 'Removed an account from Pulse'); publish(); return state(); });
+  handle('pulse:remove', async (value) => { await operation('remove', { id: id(value) }); event('account', 'Removed an account from Quota management'); publish(); return state(); });
   handle('pulse:disable', async (value, disabled) => { if (typeof disabled !== 'boolean') throw new Error('Invalid state.'); await operation('setDisabled', { id: id(value), disabled }); return state(); });
   handle('pulse:settings', (input) => {
     if (!input || typeof input !== 'object' || Array.isArray(input) || JSON.stringify(input).length > 32768) throw new Error('Invalid settings.');
@@ -247,7 +249,7 @@ app.whenReady().then(async () => {
   const iconFile = path.join(app.getAppPath(), 'dist', 'pulse.ico');
   const trayIcon = fs.existsSync(iconFile) ? nativeImage.createFromPath(iconFile) : nativeImage.createFromDataURL('data:image/svg+xml;base64,' + Buffer.from(svg).toString('base64'));
   tray = new Tray(trayIcon.resize({ width: 20, height: 20 }));
-  tray.setContextMenu(Menu.buildFromTemplate([{ label: 'Open Codex Pulse', click: showDashboard }, { label: 'Refresh usage', click: refresh }, { type: 'separator' }, { label: 'Quit Codex Pulse', click: () => app.quit() }]));
+  tray.setContextMenu(Menu.buildFromTemplate([{ label: 'Open Quota management', click: showDashboard }, { label: 'Refresh usage', click: refresh }, { type: 'separator' }, { label: 'Quit Quota management', click: () => app.quit() }]));
   tray.on('click', showDashboard);
   mainWindow = createWindow();
   if (!lifecycle) { powerMonitor.on('resume', refresh); schedule(); }
@@ -266,4 +268,4 @@ app.whenReady().then(async () => {
       app.exit(ok ? 0 : 1);
     });
   }
-}).catch((error) => { dialog.showErrorBox('Codex Pulse could not start', error.message); app.exit(1); });
+}).catch((error) => { dialog.showErrorBox('Quota management could not start', error.message); app.exit(1); });

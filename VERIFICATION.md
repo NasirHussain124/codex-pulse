@@ -1,8 +1,8 @@
 # Desktop verification — 2026-10-21
 
-Version 0.2.0, Windows x64 + Android. ccswap 0.39.2 remains the account/quota engine.
+Version 0.3.0, Windows x64 + Android. ccswap 0.39.2 remains the account/quota engine.
 
-- 33 Node unit tests passed: forecast behavior, settings allowlist, official CLI
+- 39 Node unit tests passed: forecast behavior, settings allowlist, official CLI
   sign-in orchestration, isolated profile configuration, one-time-code extraction,
   secret redaction, cancellation, timeout cleanup, reconnect identity, errors,
   vault-first startup, cache recovery, and out-of-order renderer state delivery.
@@ -16,7 +16,7 @@ Version 0.2.0, Windows x64 + Android. ccswap 0.39.2 remains the account/quota en
 - The actual frozen engine passed isolated synthetic-account JSON protocol tests,
   including encrypted backups, switching, removal, isolated login import, invalid
   path rejection, and reconnect-account checks. No live credentials were used.
-- The packaged Electron app passed all 33 UI checks: secure preload, four visible
+- The packaged Electron app passed all 39 UI checks: secure preload, four visible
   accounts, Codex-only navigation, ledger-only dashboard, search, settings, email
   masking, onboarding/sample boundaries, sorting, chart collapse/settings,
   desktop widget, right-side account panel, account chooser, rename, reconnect,
@@ -40,14 +40,21 @@ Version 0.2.0, Windows x64 + Android. ccswap 0.39.2 remains the account/quota en
   over an isolated loopback TLS connection. The self-signed installation
   certificate is explicitly a CA trust anchor; phones still pin its exact leaf.
 - Android debug APK builds with SDK 36 / AGP 8.13.2 / Gradle 8.13 / JDK 17.
-  Eight Android tests pass: private endpoint policy, fingerprint validation,
+  Eleven Android tests pass: private endpoint policy, fingerprint validation,
   correct/wrong leaf-certificate pin, Robolectric onboarding view, native widget
   inflation/configuration and unknown/expired quota handling. Android lint has
   no errors; forward-compatible widget attributes and dependency-version notices
   remain warnings. This is not a physical-device certification.
 - Full npm dependency audit reported 0 vulnerabilities.
 - NSIS installer and portable executable built successfully. They are unsigned.
-- Visual review covered the ledger, Add account dialog, widget, and narrow layout.
+- Visual review covered the ledger, Add account dialog, new purple pill widget,
+  consistent Q icon and narrow layout. Added six packaged widget checks for
+  branding, proportional fills, quota-window switching, account panel, onboarding
+  and narrow-window fitting. Widget model tests cover unknown/zero/invalid quota,
+  exact window selection, stale data, passed reset times and email privacy.
+- Rebranding tests lock the original Windows app ID, desktop user-data path,
+  executable filename, Android package and phone encryption alias. Upgrading the
+  brand must never create an empty vault.
 - Local 0.1.3 installation completed successfully. Start Menu now targets the
   permanent per-user installation instead of a portable extraction in Temp.
   The running main process and renderer both acknowledged four real saved

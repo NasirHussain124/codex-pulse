@@ -1,11 +1,16 @@
-# Codex Pulse
+# Quota management
 
 A Windows desktop account and usage manager built on **ccswap 0.39.2**. The
 dark ledger displays all saved Codex accounts together, with separate usage
 windows, remaining percentages, reset countdowns, and connection states.
-The ledger is the only dashboard view; the floating widget is a compact companion.
+The ledger is the dashboard view. The floating and Android widgets use large,
+rounded quota pills with per-account fills, reset times and a lavender/plum palette.
 
-**0.2.0 release candidate:** Windows desktop + native Android usage viewer and
+Previously named Codex Pulse. Upgrades retain the original desktop data directory,
+Windows application ID, Android package and encryption aliases so saved accounts
+and phone pairings are preserved. Internal executable/protocol names remain stable.
+
+**0.3.0 release candidate:** Windows desktop + native Android usage viewer and
 home-screen widget. Local-first, Codex-only, no analytics. This is an independent
 project, not an official OpenAI app. See [MOBILE.md](MOBILE.md) for pairing and
 [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) for production-validation gates.
@@ -26,7 +31,7 @@ project, not an official OpenAI app. See [MOBILE.md](MOBILE.md) for pairing and
 - Import existing ccswap Codex backups without changing their original store.
 - Select an account for the next Codex launch, with an explicit restart reminder.
 - Per-account quota collection with caching, backoff, timestamps, offline readings.
-- Windows DPAPI encryption for Pulse-managed saved credentials.
+- Windows DPAPI encryption for app-managed saved credentials.
 - Floating desktop widget, system tray, Windows notifications and startup setting.
 - Local usage history and CSV export, warm dark appearance, email masking.
 - Per-account remaining-quota and drain-rate charts with explicitly estimated projections.
@@ -37,7 +42,7 @@ project, not an official OpenAI app. See [MOBILE.md](MOBILE.md) for pairing and
 
 For a permanent installation, use the Setup executable. Portable builds extract
 to a temporary folder; never create a shortcut to that extracted executable.
-Use **Settings → Quit Codex Pulse** to exit completely. With close-to-tray enabled,
+Use **Settings → Quit Quota management** to exit completely. With close-to-tray enabled,
 the window's close button hides it; the tray icon or Start Menu reopens it.
 
 The **Phone companion** button enables opt-in, read-only Android sync over a
@@ -106,9 +111,9 @@ the new credentials; adding or reconnecting alone does not alter running Codex.
 
 Choosing **Use on next Codex launch** changes Codex's active `auth.json` via the
 ccswap engine. Running sessions retain their current login until restarted.
-Pulse does not close any running Codex processes. Switching applies to file-backed
+Quota management does not close any running Codex processes. Switching applies to file-backed
 CLI/IDE logins; clients using the Windows credential store may retain a separate
-account. Pulse does not weaken or change that credential-store policy.
+account. Quota management does not weaken or change that credential-store policy.
 
 Restarting ChatGPT/Codex desktop does **not** prove its account changed. There is
 no verified desktop account-switch integration in this release. Pulse labels a
@@ -146,7 +151,7 @@ schedule. They do not trigger account changes, spend credits, or redeem resets.
 
 ## Release status
 
-This is a functional **0.2.0 desktop + Android release candidate**, not a claim of completed
+This is a functional **0.3.0 desktop + Android release candidate**, not a claim of completed
 production validation. See [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) for the
 remaining public-release gates. A signing certificate and real account testing
 must be supplied by the product owner before public distribution.

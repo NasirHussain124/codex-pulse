@@ -49,4 +49,30 @@ public class CompanionViewTest {
         JSONObject account = new JSONObject().put("status", "reconnect").put("windows", new JSONArray().put(new JSONObject().put("durationMinutes", 10080).put("remainingPercent", 75)));
         assertNull(QuotaText.window(account, 10080)); assertTrue(QuotaText.stale(account));
     }
+    @Test public void pillRowShowsRealQuotaWithSelectedPaletteAndFullHeightFill() throws Exception {
+        Context context = RuntimeEnvironment.getApplication();
+        JSONObject account = new JSONObject().put("label", "Personal").put("selected", true).put("status", "ready").put("fetchedAt", java.time.Instant.now().toString())
+            .put("windows", new JSONArray().put(new JSONObject().put("durationMinutes", 10080).put("remainingPercent", 76)));
+        var view = PulseWidget.quotaRow(context, account, 10080, false).apply(context, new android.widget.FrameLayout(context));
+        assertEquals("76%", ((TextView)view.findViewById(R.id.row_percent)).getText().toString());
+        var progress = (android.widget.ProgressBar)view.findViewById(R.id.row_progress_selected);
+        assertEquals(76, progress.getProgress()); assertEquals(android.view.View.VISIBLE, progress.getVisibility());
+        assertEquals(android.view.View.GONE, view.findViewById(R.id.row_progress).getVisibility());
+        assertEquals(android.view.ViewGroup.LayoutParams.MATCH_PARENT, progress.getLayoutParams().height);
+        assertTrue(((TextView)view.findViewById(R.id.row_name)).getContentDescription().toString().contains("76 percent remaining"));
+    }
+    @Test public void pillRowDoesNotSubstituteWeeklyQuotaForMissingFiveHourQuota() throws Exception {
+        Context context = RuntimeEnvironment.getApplication();
+        JSONObject account = new JSONObject().put("label", "Work").put("status", "ready")
+            .put("windows", new JSONArray().put(new JSONObject().put("durationMinutes", 10080).put("remainingPercent", 40)));
+        var view = PulseWidget.quotaRow(context, account, 300, true).apply(context, new android.widget.FrameLayout(context));
+        assertEquals("—", ((TextView)view.findViewById(R.id.row_percent)).getText().toString());
+        assertTrue(((TextView)view.findViewById(R.id.row_reset)).getText().toString().startsWith("Saved · Not reported"));
+        assertEquals(0, ((android.widget.ProgressBar)view.findViewById(R.id.row_progress)).getProgress());
+    }
+    @Test public void appAndWidgetUseTheNewNameWithoutChangingThePackage() {
+        Context context = RuntimeEnvironment.getApplication();
+        assertEquals("Quota management", context.getString(R.string.app_name));
+        assertEquals("com.codexpulse.companion", context.getPackageName());
+    }
 }

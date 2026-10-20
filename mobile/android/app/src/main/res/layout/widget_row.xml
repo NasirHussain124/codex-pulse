@@ -1,8 +1,12 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingTop="8dp" android:paddingBottom="8dp">
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
-        <TextView android:id="@+id/row_name" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:maxLines="1" android:ellipsize="end" android:textSize="13sp" android:textColor="#E0E9D5" />
-        <TextView android:id="@+id/row_percent" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="14sp" android:textStyle="bold" android:textColor="#BDD5A7" />
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="72dp" android:layout_marginBottom="8dp">
+    <ProgressBar android:id="@+id/row_progress" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="match_parent" android:minHeight="0dp" android:maxHeight="200dp" android:padding="0dp" android:progressDrawable="@drawable/quota_progress" android:indeterminate="false" android:max="100" android:importantForAccessibility="no" />
+    <ProgressBar android:id="@+id/row_progress_selected" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="match_parent" android:minHeight="0dp" android:maxHeight="200dp" android:padding="0dp" android:progressDrawable="@drawable/quota_progress_selected" android:indeterminate="false" android:max="100" android:visibility="gone" android:importantForAccessibility="no" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="72dp" android:orientation="horizontal" android:gravity="center_vertical" android:paddingStart="17dp" android:paddingEnd="17dp" android:paddingTop="13dp" android:paddingBottom="13dp">
+        <ImageView android:layout_width="24dp" android:layout_height="24dp" android:layout_marginEnd="12dp" android:src="@drawable/ic_account" android:importantForAccessibility="no" />
+        <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical">
+            <TextView android:id="@+id/row_name" android:layout_width="match_parent" android:layout_height="wrap_content" android:maxLines="1" android:ellipsize="end" android:textSize="16sp" android:fontFamily="sans-serif-medium" android:textColor="#F1DBF4" />
+            <TextView android:id="@+id/row_reset" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="3dp" android:maxLines="1" android:ellipsize="end" android:textSize="11sp" android:textColor="#D4BFDC" />
+        </LinearLayout>
+        <TextView android:id="@+id/row_percent" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="10dp" android:textSize="25sp" android:fontFamily="sans-serif-medium" android:textColor="#F1DBF4" />
     </LinearLayout>
-    <ProgressBar android:id="@+id/row_progress" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="7dp" android:layout_marginTop="6dp" android:progressDrawable="@drawable/quota_progress" android:max="100" />
-    <TextView android:id="@+id/row_reset" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="4dp" android:maxLines="1" android:textSize="11sp" android:textColor="#A4AE98" />
-</LinearLayout>
+</FrameLayout>

@@ -1,0 +1,37 @@
+/* Full-height quota pills, inspired by the Android battery widget. */
+html:has(.widget-mode) { background: #252536; scrollbar-gutter: auto; }
+.widget-mode { min-height: 100dvh; background: #252536; color: #eee6ff; --muted: #c0b5d2; --accent: #d2baff; }
+.battery-widget { padding: 23px 20px 17px; max-width: 620px; margin: auto; }
+.battery-widget-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 17px; }
+.battery-widget-heading h1 { font-size: 19px; font-weight: 600; letter-spacing: -.4px; }
+.battery-widget-heading p { font-size: 11px; color: #b7adc8; margin-top: 5px; }
+.battery-widget-heading>div:last-child { display: flex; }
+.battery-widget .icon-btn { width: 36px; height: 36px; border-radius: 50%; color: #d7c9ec; }
+.battery-widget .icon-btn:hover:not(:disabled) { background: #45405b; }
+.battery-widget-controls { display: flex; align-items: center; gap: 3px; margin-bottom: 16px; }
+.widget-period { display: flex; gap: 3px; background: #303044; border-radius: 22px; padding: 4px; margin-right: auto; }
+.widget-period button { min-height: 30px; min-width: 72px; padding: 4px 15px; font-size: 12px; border-radius: 18px; color: #c7bcd9; }
+.widget-period button[aria-pressed=true] { background: #d4c3f3; color: #322641; font-weight: 600; }
+.quota-pills { display: grid; gap: 8px; padding: 10px; border-radius: 33px; background: #2e2d43; }
+.quota-pill { --pill-track: #301735; --pill-fill: #614566; position: relative; isolation: isolate; overflow: hidden; display: flex; justify-content: flex-start; gap: 12px; width: 100%; min-width: 0; min-height: 72px; padding: 14px 19px; border-radius: 27px; background: var(--pill-track); color: #f1dbf4; text-align: left; }
+.quota-pill.selected { --pill-track: #323348; --pill-fill: #494c75; color: #e3dfff; }
+.quota-pill:hover:not(:disabled) { color: #fff; box-shadow: inset 0 0 0 1px #cbb4eb80; }
+.quota-pill:focus-visible { outline-offset: -3px; outline: 2px solid #e4ceff; }
+.quota-pill-fill { position: absolute; z-index: -1; inset: 0 auto 0 0; border-radius: inherit; background: var(--pill-fill); transition: width .35s ease; pointer-events: none; }
+.quota-pill-icon { color: #dac4ed; }
+.quota-pill-copy { display: flex; flex-direction: column; gap: 5px; min-width: 0; flex: 1; }
+.quota-pill-copy strong { font-size: 16px; font-weight: 550; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.2; }
+.quota-pill-copy small { font-size: 11px; color: #d4bfdc; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.quota-pill.selected .quota-pill-copy small { color: #c5c3e7; }
+.quota-pill-value { font-size: 25px; font-weight: 550; letter-spacing: -.8px; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.quota-pill.unreported { --pill-track: #343044; color: #c9bfd6; }
+.battery-widget-footer { display: flex; align-items: center; justify-content: space-between; padding: 18px 5px 0; gap: 10px; }
+.battery-widget-footer>div { display: flex; align-items: center; gap: 10px; }
+.battery-widget-footer>div>span { font-size: 12px; font-weight: 600; }
+.battery-widget-footer small { display: block; font-size: 10px; color: #b9aec8; margin-top: 4px; font-weight: 400; }
+.widget-empty { text-align: center; padding: 28px 14px; }
+.widget-empty h2 { margin-top: 18px; font-size: 18px; }.widget-empty p { margin: 10px 0 20px; color: #c0b5d2; font-size: 13px; line-height: 1.6; }
+.widget-design-preview { padding: 15px; margin: 20px 0; border-radius: 29px; background: #252536; }
+.widget-design-preview .quota-pill { min-height: 65px; }.widget-design-preview .quota-pill-copy strong { font-size: 14px; }.widget-design-preview .quota-pill-value { font-size: 22px; }
+@media (max-width: 370px) { .battery-widget { padding: 18px 12px; }.quota-pill { padding: 14px; gap: 9px; }.quota-pill-copy strong { font-size: 14px; }.quota-pill-value { font-size: 23px; } }
+@media (prefers-reduced-motion: reduce) { .quota-pill-fill { transition: none; } }

@@ -12,7 +12,7 @@ class Engine {
     if (this.child) return;
     const { packaged, resourcesPath, appPath, dataDir, codexHome } = this.options;
     const exe = packaged ? path.join(resourcesPath, 'engine', 'pulse-engine.exe') : process.env.PULSE_PYTHON;
-    if (!exe || !fs.existsSync(exe)) throw new Error('The bundled account engine is missing. Reinstall Codex Pulse. Development builds require PULSE_PYTHON.');
+    if (!exe || !fs.existsSync(exe)) throw new Error('The bundled account engine is missing. Reinstall Quota management. Development builds require PULSE_PYTHON.');
     const args = packaged ? ['--data-dir', dataDir] : [path.join(appPath, 'engine', 'pulse_bridge.py'), '--data-dir', dataDir];
     if (codexHome) args.push('--codex-home', codexHome);
     const child = spawn(exe, args, { stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true, shell: false,
@@ -29,7 +29,7 @@ class Engine {
       } catch { /* Discard non-protocol output; never forward it to the renderer. */ }
     });
     child.stderr.on('data', () => {});
-    child.on('error', () => this.fail('The account engine could not start. Reinstall Codex Pulse.'));
+    child.on('error', () => this.fail('The account engine could not start. Reinstall Quota management.'));
     child.on('exit', () => { if (this.child === child) { this.child = null; this.fail('The account engine stopped. Refresh to reconnect.'); } });
   }
   fail(message) {

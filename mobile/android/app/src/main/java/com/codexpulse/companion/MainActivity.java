@@ -16,6 +16,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.ScrollView;
 import android.widget.TextView;
@@ -25,7 +26,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 public final class MainActivity extends Activity {
-    private static final int BG = Color.rgb(20, 21, 17), TEXT = Color.rgb(228, 236, 217), MUTED = Color.rgb(159, 173, 145), ACCENT = Color.rgb(185, 208, 163);
+    private static final int BG = Color.rgb(37, 37, 54), TEXT = Color.rgb(238, 230, 255), MUTED = Color.rgb(192, 181, 210), ACCENT = Color.rgb(212, 195, 243);
     private LinearLayout root;
     private boolean busy;
     private String message = "";
@@ -43,7 +44,7 @@ public final class MainActivity extends Activity {
     private GradientDrawable shape(int color, int radius) { GradientDrawable bg = new GradientDrawable(); bg.setColor(color); bg.setCornerRadius(dp(radius)); return bg; }
     private Button button(String value, boolean primary, Runnable action) {
         Button view = new Button(this); view.setText(value); view.setAllCaps(false); view.setTextSize(14); view.setTextColor(primary ? BG : TEXT);
-        view.setBackground(shape(primary ? ACCENT : Color.rgb(42, 48, 36), 16)); view.setPadding(dp(18), dp(8), dp(18), dp(8)); view.setMinHeight(dp(52)); view.setEnabled(!busy);
+        view.setBackground(shape(primary ? ACCENT : Color.rgb(58, 53, 76), 16)); view.setPadding(dp(18), dp(8), dp(18), dp(8)); view.setMinHeight(dp(52)); view.setEnabled(!busy);
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, dp(52)); params.setMargins(0, dp(10), 0, dp(3)); view.setLayoutParams(params); view.setOnClickListener(v -> action.run()); return view;
     }
     private void work(RunnableWithError action) {
@@ -60,7 +61,7 @@ public final class MainActivity extends Activity {
         if (previous != null) previous.removeCallbacks(ticker);
         scroll.setOnApplyWindowInsetsListener((v, insets) -> { scroll.setPadding(insets.getSystemWindowInsetLeft(), insets.getSystemWindowInsetTop(), insets.getSystemWindowInsetRight(), insets.getSystemWindowInsetBottom()); return insets; });
         setContentView(scroll);
-        TextView brand = text("‹/›  CODEX PULSE", 12, ACCENT); brand.setLetterSpacing(.14f); root.addView(brand);
+        LinearLayout brand = new LinearLayout(this); brand.setGravity(Gravity.CENTER_VERTICAL); ImageView mark = new ImageView(this); mark.setImageResource(R.drawable.ic_pulse); brand.addView(mark, new LinearLayout.LayoutParams(dp(32), dp(32))); TextView brandName = text("Quota management", 15, TEXT); brandName.setPadding(dp(10), 0, 0, 0); brand.addView(brandName); root.addView(brand);
         TextView title = text("Your limits.\nAt a glance.", 34, TEXT); title.setTypeface(null, Typeface.BOLD); title.setPadding(0, dp(24), 0, dp(12)); root.addView(title);
         root.addView(text("A private, read-only window into your PC’s Codex accounts.", 14, MUTED));
         JSONObject data;
@@ -68,10 +69,10 @@ public final class MainActivity extends Activity {
         boolean paired = data.optJSONObject("connection") != null;
         if (!message.isEmpty()) root.addView(text(message, 13, Color.rgb(236, 173, 140)));
         if (!paired) {
-            LinearLayout intro = new LinearLayout(this); intro.setOrientation(LinearLayout.VERTICAL); intro.setPadding(dp(20), dp(18), dp(20), dp(18)); intro.setBackground(shape(Color.rgb(32, 39, 27), 22));
+            LinearLayout intro = new LinearLayout(this); intro.setOrientation(LinearLayout.VERTICAL); intro.setPadding(dp(20), dp(18), dp(20), dp(18)); intro.setBackground(shape(Color.rgb(46, 45, 67), 22));
             LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2); params.setMargins(0, dp(28), 0, dp(8)); intro.setLayoutParams(params);
-            intro.addView(text("Connect your PC", 20, TEXT)); intro.addView(text("1  Open Codex Pulse on Windows.\n2  Choose Phone companion and enable it.\n3  Generate a QR code, then scan it here.\n\nUse the same private Wi-Fi. Your Codex login stays on your PC.", 14, MUTED)); root.addView(intro);
-            root.addView(button("Scan pairing QR", true, () -> new IntentIntegrator(this).setDesiredBarcodeFormats(IntentIntegrator.QR_CODE).setPrompt("Scan the QR in Codex Pulse on your PC").setBeepEnabled(false).setOrientationLocked(false).initiateScan()));
+            intro.addView(text("Connect your PC", 20, TEXT)); intro.addView(text("1  Open Quota management on Windows.\n2  Choose Phone companion and enable it.\n3  Generate a QR code, then scan it here.\n\nUse the same private Wi-Fi. Your Codex login stays on your PC.", 14, MUTED)); root.addView(intro);
+            root.addView(button("Scan pairing QR", true, () -> new IntentIntegrator(this).setDesiredBarcodeFormats(IntentIntegrator.QR_CODE).setPrompt("Scan the QR in Quota management on your PC").setBeepEnabled(false).setOrientationLocked(false).initiateScan()));
             root.addView(button("Paste a pairing link", false, this::paste));
             if (!data.toString().equals("{}")) root.addView(button("Forget damaged connection", false, this::forget));
         } else {
@@ -86,11 +87,11 @@ public final class MainActivity extends Activity {
             AppWidgetManager widgets = AppWidgetManager.getInstance(this);
             root.addView(button("Add home-screen widget", false, () -> {
                 if (widgets.isRequestPinAppWidgetSupported()) widgets.requestPinAppWidget(new ComponentName(this, PulseWidget.class), null, null);
-                else new AlertDialog.Builder(this).setMessage("Long-press an empty area of your home screen, choose Widgets, then Codex Pulse.").setPositiveButton("OK", null).show();
+                else new AlertDialog.Builder(this).setMessage("Long-press an empty area of your home screen, choose Widgets, then Quota management.").setPositiveButton("OK", null).show();
             }));
             root.addView(button("Forget this PC", false, this::forget));
         }
-        root.addView(text("Private by design\nNo analytics. No Codex credentials on your phone. No account-switching controls. Background updates are scheduled by Android.\n\nCompanion 0.2.0 · Android release candidate", 11, MUTED));
+        root.addView(text("Private by design\nNo analytics. No Codex credentials on your phone. No account-switching controls. Background updates are scheduled by Android.\n\nCompanion 0.3.0 · Android release candidate", 11, MUTED));
         root.addView(button("Open-source notices", false, () -> {
             try (var input = getAssets().open("NOTICE.txt")) {
                 var output = new java.io.ByteArrayOutputStream(); byte[] bytes = new byte[2048]; int length;
@@ -125,9 +126,9 @@ public final class MainActivity extends Activity {
         if (busy) return;
         try {
             CompanionClient client = new CompanionClient(this); JSONObject pair = client.decodePairing(value);
-            new AlertDialog.Builder(this).setTitle("Trust this PC?").setMessage("Pair with " + pair.getString("endpoint") + "?\n\nOnly continue if you generated this QR/link in your own Codex Pulse app. The phone will pin this PC’s certificate and receive read-only usage access.").setPositiveButton("Pair securely", (dialog, which) -> work(() -> { client.pair(pair); RefreshJob.schedule(this); })).setNegativeButton("Cancel", null).show();
-        } catch (Exception error) { message = "Invalid pairing link. Generate a fresh QR code in Pulse on your PC."; render(); }
+            new AlertDialog.Builder(this).setTitle("Trust this PC?").setMessage("Pair with " + pair.getString("endpoint") + "?\n\nOnly continue if you generated this QR/link in your own Quota management app. The phone will pin this PC’s certificate and receive read-only usage access.").setPositiveButton("Pair securely", (dialog, which) -> work(() -> { client.pair(pair); RefreshJob.schedule(this); })).setNegativeButton("Cancel", null).show();
+        } catch (Exception error) { message = "Invalid pairing link. Generate a fresh QR code in Quota management on your PC."; render(); }
     }
-    private void forget() { new AlertDialog.Builder(this).setTitle("Forget this PC?").setMessage("Removes this phone’s connection and cached readings. You can also revoke the phone in Pulse on your PC.").setPositiveButton("Forget", (dialog, which) -> work(() -> new PhoneStore(this).clear())).setNegativeButton("Cancel", null).show(); }
+    private void forget() { new AlertDialog.Builder(this).setTitle("Forget this PC?").setMessage("Removes this phone’s connection and cached readings. You can also revoke the phone in Quota management on your PC.").setPositiveButton("Forget", (dialog, which) -> work(() -> new PhoneStore(this).clear())).setNegativeButton("Cancel", null).show(); }
     @Override protected void onActivityResult(int request, int result, Intent data) { super.onActivityResult(request, result, data); IntentResult scan = IntentIntegrator.parseActivityResult(request, result, data); if (scan != null && scan.getContents() != null) confirmPair(scan.getContents()); }
 }

@@ -54,7 +54,7 @@ class LoginManager {
     if (expectedIdentity !== null && !/^[a-f0-9]{16}$/.test(expectedIdentity)) throw new Error('Invalid reconnect account.');
     if (this.active) throw new Error('A sign-in is already in progress. Cancel it before starting another.');
     const executable = this.resolveCLI();
-    if (!executable) return this.set({ phase: 'error', message: 'Codex CLI was not found. Install the official Codex app or CLI, restart Pulse, and try again. You can also save an existing login below.' });
+    if (!executable) return this.set({ phase: 'error', message: 'Codex CLI was not found. Install the official Codex app or CLI, restart Quota management, and try again. You can also save an existing login below.' });
     const sessionId = randomUUID(), directory = path.join(this.root, 'pending-logins', sessionId);
     fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
     const args = ['login', '-c', 'cli_auth_credentials_store="file"', '-c', 'forced_login_method="chatgpt"'];
@@ -115,7 +115,7 @@ class LoginManager {
     return this.set({ phase: 'idle' });
   }
   stop() {
-    if (this.active) this.fail(this.active, 'Sign-in stopped because Pulse is closing.');
+    if (this.active) this.fail(this.active, 'Sign-in stopped because Quota management is closing.');
   }
 }
 module.exports = { LoginManager, findCodex, deviceCode, removeSession, DEVICE_URL };

@@ -39,7 +39,7 @@ class MobileBridge {
     await this.stopInternal();
     if (!this.vault.tls) {
       const selfsigned = require('selfsigned');
-      const result = await selfsigned.generate([{ name: 'commonName', value: 'Codex Pulse companion' }], {
+      const result = await selfsigned.generate([{ name: 'commonName', value: 'Quota management companion' }], {
         keyType: 'ec', curve: 'P-256', algorithm: 'sha256',
         notAfterDate: new Date(this.clock() + 5 * 365 * 86400000),
         // The self-signed installation identity is also its sole trust anchor.

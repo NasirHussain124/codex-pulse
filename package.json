@@ -1,7 +1,7 @@
 {
   "name": "codex-pulse",
-  "productName": "Codex Pulse",
-  "version": "0.2.0",
+  "productName": "Quota management",
+  "version": "0.3.0",
   "description": "A private desktop home for all your Codex accounts, powered by ccswap.",
   "author": "Codex Pulse contributors",
   "license": "MIT",
@@ -39,13 +39,14 @@
   },
   "build": {
     "appId": "com.codexpulse.desktop",
-    "productName": "Codex Pulse",
+    "productName": "Quota management",
+    "executableName": "Codex Pulse",
     "directories": { "output": "release" },
     "files": ["dist/**/*", "electron/**/*", "package.json", "LICENSE", "THIRD_PARTY_NOTICES.md"],
     "extraResources": [{ "from": "engine-dist", "to": "engine", "filter": ["**/*"] }],
     "win": { "target": ["nsis", "portable"], "icon": "public/pulse.ico", "signExecutable": false },
-    "nsis": { "oneClick": false, "perMachine": false, "allowToChangeInstallationDirectory": true, "createDesktopShortcut": true, "deleteAppDataOnUninstall": false, "artifactName": "Codex-Pulse-Setup-${version}-${arch}.${ext}" },
-    "portable": { "artifactName": "Codex-Pulse-Portable-${version}-${arch}.${ext}" },
-    "artifactName": "Codex-Pulse-${version}-${arch}.${ext}"
+    "nsis": { "oneClick": false, "perMachine": false, "allowToChangeInstallationDirectory": true, "createDesktopShortcut": true, "shortcutName": "Quota management", "deleteAppDataOnUninstall": false, "artifactName": "Quota-Management-Setup-${version}-${arch}.${ext}" },
+    "portable": { "artifactName": "Quota-Management-Portable-${version}-${arch}.${ext}" },
+    "artifactName": "Quota-Management-${version}-${arch}.${ext}"
   }
 }
