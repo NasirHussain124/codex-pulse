@@ -1,0 +1,14 @@
+Codex Pulse Android companion — independent project, not an official OpenAI app.
+Application source is licensed under MIT; see the repository LICENSE.
+
+Runtime libraries include:
+- ZXing Android Embedded 4.3.0, Journey Mobile, Apache License 2.0.
+  https://github.com/journeyapps/zxing-android-embedded
+- ZXing core, ZXing authors, Apache License 2.0.
+  https://github.com/zxing/zxing
+- AndroidX support libraries, Android Open Source Project, Apache License 2.0.
+  https://android.googlesource.com/platform/frameworks/support/
+
+License text: https://www.apache.org/licenses/LICENSE-2.0
+Dependencies retain their own copyrights, licenses and attribution notices.
+No OpenAI credential or proprietary desktop-app source is included.

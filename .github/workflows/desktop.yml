@@ -1,0 +1,48 @@
+name: Windows desktop
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify-and-package:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - run: node scripts/check-source.cjs
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.14.5'
+      - run: npm ci --no-fund --no-audit
+      - run: uv venv --python 3.14.5 .venv314
+      - run: uv pip install --python .venv314/Scripts/python.exe -r engine/requirements.lock.txt
+      - run: npm test
+      - run: .venv314/Scripts/python.exe -m pytest -q engine/test_bridge.py
+      - run: .venv314/Scripts/python.exe -m PyInstaller --noconfirm --onefile --name pulse-engine --copy-metadata ccswap --collect-all truststore --distpath engine-dist --workpath engine-build engine/pulse_bridge.py
+      - run: node tests/packaged-engine.cjs
+      - run: npm audit
+      - run: npm run package:win
+      - name: Packaged application smoke test
+        shell: pwsh
+        run: |
+          $process = Start-Process -FilePath '.\release\win-unpacked\Codex Pulse.exe' -ArgumentList '--smoke' -WindowStyle Hidden -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw 'Packaged application smoke test failed.' }
+      - name: Offline account persistence and restart test
+        shell: pwsh
+        run: |
+          $env:PULSE_PYTHON = (Resolve-Path -LiteralPath '.venv314\Scripts\python.exe').Path
+          node tests/desktop-lifecycle.cjs '.\release\win-unpacked\Codex Pulse.exe'
+          if ($LASTEXITCODE -ne 0) { throw 'Account lifecycle test failed.' }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: codex-pulse-windows-unsigned
+          path: |
+            release/*.exe
+            release/*.blockmap

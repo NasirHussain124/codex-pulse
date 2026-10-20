@@ -1,0 +1,9 @@
+Codex Pulse 0.2.0 — Windows x64 unsigned / Android debug-signed release candidate
+Built and checked 2026-10-21
+
+SHA256
+D8D225944875D3E239C0BC6D1BA87D477079BC575C7220CA303717CD66C2FE3A  Codex-Pulse-Setup-0.2.0-x64.exe
+CAF54249EE092B6AEF079947DD506CA6CDF62C2412B1D44601A10F9E48A45084  Codex-Pulse-Portable-0.2.0-x64.exe
+36A45C276D4FB972570990226FE7FF88F632A913E2C98245553D09170244BC15  Codex-Pulse-Android-0.2.0-debug.apk
+
+Artifacts: private GitHub release v0.2.0; local build release/ directory.

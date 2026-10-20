@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">Codex Pulse</string>
+    <string name="widget_description">Read-only Codex quota for your chosen accounts</string>
+    <string name="widget_title">Your Codex widget</string>
+    <string name="widget_help">Choose a quota window and accounts. Resize the widget to show more accounts. Leave all unchecked to show every account.</string>
+    <string name="weekly_remaining">7-day remaining</string>
+    <string name="five_hour_remaining">5-hour remaining</string>
+    <string name="add_widget">Add widget</string>
+    <string name="refresh_usage">Refresh usage</string>
+    <string name="refresh_icon" translatable="false">↻</string>
+    <string name="pair_pc">Pair your PC in the app</string>
+</resources>
