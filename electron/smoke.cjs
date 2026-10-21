@@ -37,6 +37,7 @@ async function runSmoke({ app, window, createWindow }) {
     report.viewport = { width: initial.width, height: initial.height };
     report.fourAccounts = initial.cards === 4;
     report.secureBridge = initial.bridge;
+    report.nativeClipboardBridge = await js(`typeof window.pulse.mobileCopyPair === 'function' && typeof window.pulse.copyLoginCode === 'function'`);
     report.allFourVisible = initial.visible;
     report.ledgerOnly = await js(`!document.querySelector('select[aria-label="Dashboard view"]') && !document.body.innerText.includes('watching all accounts')`);
     await js(`document.querySelector('.companion-shortcut button').click()`);
@@ -138,7 +139,7 @@ async function runSmoke({ app, window, createWindow }) {
     await pause(300);
     report.widget = await widget.webContents.executeJavaScript(`document.querySelectorAll('[data-account-card]').length === 4 && [...document.querySelectorAll('[data-account-card]')].every(row => row.getBoundingClientRect().bottom <= innerHeight)`);
     const widgetJS = source => widget.webContents.executeJavaScript(source);
-    report.widgetBrand = await widgetJS(`document.body.innerText.includes('Quota management') && document.querySelectorAll('.quota-pill').length === 4 && getComputedStyle(document.querySelector('.quota-pill')).borderRadius === '27px'`);
+    report.widgetBrand = await widgetJS(`document.body.innerText.includes('Quota management') && document.querySelectorAll('.quota-pill').length === 4 && getComputedStyle(document.querySelector('.quota-pill')).borderRadius === '12px' && getComputedStyle(document.querySelector('.quota-pill-fill')).height === '4px'`);
     report.widgetAccurateFills = await widgetJS(`[...document.querySelectorAll('.quota-pill')].every(row => Number.parseFloat(row.querySelector('.quota-pill-fill').style.width) === Number(row.dataset.remaining || 0))`);
     await capture(widget, 'codex-pulse-widget.png');
     await widgetJS(`document.querySelector('.widget-period button[aria-pressed="false"]').click()`); await pause(400);

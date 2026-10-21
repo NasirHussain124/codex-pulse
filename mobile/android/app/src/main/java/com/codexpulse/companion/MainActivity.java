@@ -20,14 +20,14 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.ScrollView;
 import android.widget.TextView;
-import com.google.zxing.integration.android.IntentIntegrator;
-import com.google.zxing.integration.android.IntentResult;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 public final class MainActivity extends Activity {
     private static final int BG = Color.rgb(37, 37, 54), TEXT = Color.rgb(238, 230, 255), MUTED = Color.rgb(192, 181, 210), ACCENT = Color.rgb(212, 195, 243);
     private LinearLayout root;
+    static final int SCAN = 4501;
+    private long lastRefresh;
     private boolean busy;
     private String message = "";
     private final Runnable ticker = () -> { if (!isFinishing()) render(); };
@@ -36,6 +36,21 @@ public final class MainActivity extends Activity {
     }
     @Override protected void onDestroy() { if (root != null) root.removeCallbacks(ticker); super.onDestroy(); }
     @Override protected void onNewIntent(Intent intent) { super.onNewIntent(intent); setIntent(intent); handleIntent(intent); }
+    @Override protected void onResume() {
+        super.onResume();
+        if (root != null) { root.removeCallbacks(ticker); root.postDelayed(ticker, 60000); }
+        try {
+            if (!busy && System.currentTimeMillis() - lastRefresh > 15000 && new PhoneStore(this).read().has("connection")) {
+                lastRefresh = System.currentTimeMillis();
+                RefreshJob.refresh(getApplicationContext(), () -> runOnUiThread(() -> { if (!isFinishing() && !isDestroyed()) render(); }));
+            }
+        } catch (Exception ignored) { }
+    }
+    @Override protected void onPause() { if (root != null) root.removeCallbacks(ticker); super.onPause(); }
+    void scan() {
+        try { startActivityForResult(new Intent(this, ScannerActivity.class), SCAN); }
+        catch (RuntimeException error) { message = "Camera could not open. You can paste the pairing link instead."; render(); }
+    }
     private void handleIntent(Intent intent) { if (intent.getData() != null) { String value = intent.getData().toString(); intent.setData(null); confirmPair(value); } }
     private int dp(float value) { return (int)(value * getResources().getDisplayMetrics().density + .5f); }
     private TextView text(String value, int size, int color) {
@@ -62,8 +77,8 @@ public final class MainActivity extends Activity {
         scroll.setOnApplyWindowInsetsListener((v, insets) -> { scroll.setPadding(insets.getSystemWindowInsetLeft(), insets.getSystemWindowInsetTop(), insets.getSystemWindowInsetRight(), insets.getSystemWindowInsetBottom()); return insets; });
         setContentView(scroll);
         LinearLayout brand = new LinearLayout(this); brand.setGravity(Gravity.CENTER_VERTICAL); ImageView mark = new ImageView(this); mark.setImageResource(R.drawable.ic_pulse); brand.addView(mark, new LinearLayout.LayoutParams(dp(32), dp(32))); TextView brandName = text("Quota management", 15, TEXT); brandName.setPadding(dp(10), 0, 0, 0); brand.addView(brandName); root.addView(brand);
-        TextView title = text("Your limits.\nAt a glance.", 34, TEXT); title.setTypeface(null, Typeface.BOLD); title.setPadding(0, dp(24), 0, dp(12)); root.addView(title);
-        root.addView(text("A private, read-only window into your PC’s Codex accounts.", 14, MUTED));
+        TextView title = text("Your Codex usage", 28, TEXT); title.setTypeface(null, Typeface.BOLD); title.setPadding(0, dp(24), 0, dp(12)); root.addView(title);
+        root.addView(text("All your accounts. A little more headroom.", 13, MUTED));
         JSONObject data;
         try { data = new PhoneStore(this).read(); } catch (Exception error) { data = new JSONObject(); message = "Encrypted phone data could not be opened. Forget this connection and pair again."; }
         boolean paired = data.optJSONObject("connection") != null;
@@ -72,18 +87,18 @@ public final class MainActivity extends Activity {
             LinearLayout intro = new LinearLayout(this); intro.setOrientation(LinearLayout.VERTICAL); intro.setPadding(dp(20), dp(18), dp(20), dp(18)); intro.setBackground(shape(Color.rgb(46, 45, 67), 22));
             LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2); params.setMargins(0, dp(28), 0, dp(8)); intro.setLayoutParams(params);
             intro.addView(text("Connect your PC", 20, TEXT)); intro.addView(text("1  Open Quota management on Windows.\n2  Choose Phone companion and enable it.\n3  Generate a QR code, then scan it here.\n\nUse the same private Wi-Fi. Your Codex login stays on your PC.", 14, MUTED)); root.addView(intro);
-            root.addView(button("Scan pairing QR", true, () -> new IntentIntegrator(this).setDesiredBarcodeFormats(IntentIntegrator.QR_CODE).setPrompt("Scan the QR in Quota management on your PC").setBeepEnabled(false).setOrientationLocked(false).initiateScan()));
+            root.addView(button("Scan pairing QR", true, this::scan));
             root.addView(button("Paste a pairing link", false, this::paste));
             if (!data.toString().equals("{}")) root.addView(button("Forget damaged connection", false, this::forget));
         } else {
             boolean offline = data.has("error");
-            root.addView(text(busy ? "Connecting to your PC…" : offline ? "●  PC offline · saved readings" : "●  Paired · private Wi-Fi", 12, offline ? Color.rgb(223, 178, 120) : ACCENT));
-            if (offline) root.addView(text(data.optString("error"), 12, MUTED));
+            root.addView(text(busy ? "Refreshing…" : offline ? "Saved readings · PC offline" : "Connected to your PC", 12, offline ? Color.rgb(223, 178, 120) : ACCENT));
+
             JSONObject snapshot = data.optJSONObject("snapshot"); JSONArray accounts = snapshot == null ? null : snapshot.optJSONArray("accounts");
             if (accounts == null || accounts.length() == 0) root.addView(text("No account readings yet. Refresh with your PC online.", 15, MUTED));
             else for (int i = 0; i < accounts.length(); i++) { JSONObject account = accounts.optJSONObject(i); if (account != null) account(account, offline); }
             root.addView(button(busy ? "Refreshing…" : "Refresh from PC", true, () -> work(() -> new CompanionClient(this).refresh())));
-            root.addView(text("Refresh reads the PC’s latest collected snapshot. It does not sign in, switch accounts, or force extra provider requests.", 11, MUTED));
+            root.addView(button("Pair another PC", false, this::scan));
             AppWidgetManager widgets = AppWidgetManager.getInstance(this);
             root.addView(button("Add home-screen widget", false, () -> {
                 if (widgets.isRequestPinAppWidgetSupported()) widgets.requestPinAppWidget(new ComponentName(this, PulseWidget.class), null, null);
@@ -91,7 +106,7 @@ public final class MainActivity extends Activity {
             }));
             root.addView(button("Forget this PC", false, this::forget));
         }
-        root.addView(text("Private by design\nNo analytics. No Codex credentials on your phone. No account-switching controls. Background updates are scheduled by Android.\n\nCompanion 0.3.0 · Android release candidate", 11, MUTED));
+        root.addView(text("Private Wi-Fi sync · 0.4.0", 11, MUTED));
         root.addView(button("Open-source notices", false, () -> {
             try (var input = getAssets().open("NOTICE.txt")) {
                 var output = new java.io.ByteArrayOutputStream(); byte[] bytes = new byte[2048]; int length;
@@ -102,20 +117,26 @@ public final class MainActivity extends Activity {
         root.postDelayed(ticker, 60000);
     }
     private void account(JSONObject account, boolean offline) {
-        LinearLayout card = new LinearLayout(this); card.setOrientation(LinearLayout.VERTICAL); card.setPadding(dp(20), dp(18), dp(20), dp(20)); card.setBackground(shape(Color.rgb(31, 36, 27), 23));
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2); params.setMargins(0, dp(16), 0, 0); card.setLayoutParams(params);
-        TextView name = text(account.optString("label", "Codex account"), 18, TEXT); name.setTypeface(null, Typeface.BOLD); card.addView(name);
+        LinearLayout card = new LinearLayout(this); card.setOrientation(LinearLayout.VERTICAL); card.setPadding(dp(18), dp(16), dp(18), dp(16)); card.setBackground(shape(Color.rgb(47, 44, 63), 24));
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2); params.setMargins(0, dp(14), 0, 0); card.setLayoutParams(params);
+        TextView name = text(AccountText.name(account), 17, TEXT); name.setTypeface(null, Typeface.BOLD); name.setMaxLines(1); name.setEllipsize(android.text.TextUtils.TruncateAt.END); card.addView(name);
+        String email = account.optString("email", "");
+        if (!email.trim().isEmpty() && !email.equals(AccountText.name(account))) { TextView address = text(email, 12, MUTED); address.setMaxLines(1); address.setEllipsize(android.text.TextUtils.TruncateAt.MIDDLE); card.addView(address); }
         boolean stale = offline || QuotaText.stale(account);
-        card.addView(text((stale ? "Saved / stale · " : "") + QuotaText.observed(account), 10, MUTED));
+        LinearLayout limits = new LinearLayout(this); limits.setOrientation(LinearLayout.HORIZONTAL);
         for (int duration : new int[]{300, 10080}) {
             JSONObject window = QuotaText.window(account, duration); int percent = QuotaText.percent(window);
-            LinearLayout row = new LinearLayout(this); row.setOrientation(LinearLayout.HORIZONTAL); row.setGravity(Gravity.CENTER_VERTICAL);
-            TextView label = text(duration == 300 ? "5-hour limit" : "7-day limit", 13, MUTED); label.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1)); row.addView(label);
+            LinearLayout column = new LinearLayout(this); column.setOrientation(LinearLayout.VERTICAL);
+            LinearLayout.LayoutParams columnParams = new LinearLayout.LayoutParams(0, -2, 1); column.setLayoutParams(columnParams);
+            if (duration == 10080) column.setPadding(dp(18), 0, 0, 0);
+            column.addView(text(duration == 300 ? "5-hour" : "7-day", 12, MUTED));
             int color = percent < 0 || stale ? MUTED : percent <= 10 ? Color.rgb(231, 133, 126) : percent <= 30 ? Color.rgb(221, 187, 116) : ACCENT;
-            row.addView(text(percent < 0 ? "—" : percent + "%", 22, color)); card.addView(row);
-            ProgressBar bar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal); bar.setMax(100); bar.setProgress(Math.max(0, percent)); bar.setProgressTintList(ColorStateList.valueOf(color)); bar.setProgressBackgroundTintList(ColorStateList.valueOf(Color.rgb(51, 60, 42))); bar.setLayoutParams(new LinearLayout.LayoutParams(-1, dp(9))); card.addView(bar);
-            card.addView(text(percent < 0 ? "reconnect".equals(account.optString("status")) ? "Reconnect on your PC" : "Not reported" : QuotaText.reset(window), 10, MUTED));
+            TextView value = text(percent < 0 ? "—" : percent + "%", 34, color); value.setTypeface(null, Typeface.NORMAL); column.addView(value);
+            ProgressBar bar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal); bar.setMax(100); bar.setProgress(Math.max(0, percent)); bar.setProgressTintList(ColorStateList.valueOf(color)); bar.setProgressBackgroundTintList(ColorStateList.valueOf(Color.rgb(70, 64, 85))); bar.setLayoutParams(new LinearLayout.LayoutParams(-1, dp(5))); column.addView(bar);
+            column.addView(text(percent < 0 ? "reconnect".equals(account.optString("status")) ? "Reconnect on PC" : "Not reported" : QuotaText.reset(window), 11, MUTED)); limits.addView(column);
         }
+        card.addView(limits);
+        if (stale) card.addView(text("Saved · " + QuotaText.observed(account), 11, MUTED));
         root.addView(card);
     }
     private void paste() {
@@ -130,5 +151,10 @@ public final class MainActivity extends Activity {
         } catch (Exception error) { message = "Invalid pairing link. Generate a fresh QR code in Quota management on your PC."; render(); }
     }
     private void forget() { new AlertDialog.Builder(this).setTitle("Forget this PC?").setMessage("Removes this phone’s connection and cached readings. You can also revoke the phone in Quota management on your PC.").setPositiveButton("Forget", (dialog, which) -> work(() -> new PhoneStore(this).clear())).setNegativeButton("Cancel", null).show(); }
-    @Override protected void onActivityResult(int request, int result, Intent data) { super.onActivityResult(request, result, data); IntentResult scan = IntentIntegrator.parseActivityResult(request, result, data); if (scan != null && scan.getContents() != null) confirmPair(scan.getContents()); }
+    @Override protected void onActivityResult(int request, int result, Intent data) {
+        super.onActivityResult(request, result, data);
+        if (request != SCAN || data == null) return;
+        if (result == RESULT_OK && data.getStringExtra("pairing") != null) confirmPair(data.getStringExtra("pairing"));
+        else if (data.getBooleanExtra("manual", false)) paste();
+    }
 }

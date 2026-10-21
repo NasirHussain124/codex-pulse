@@ -34,7 +34,7 @@ public final class WidgetConfigActivity extends Activity {
             JSONObject snapshot = new PhoneStore(this).read().optJSONObject("snapshot"); JSONArray accounts = snapshot == null ? null : snapshot.optJSONArray("accounts");
             if (accounts != null) for (int i = 0; i < accounts.length(); i++) {
                 JSONObject account = accounts.getJSONObject(i); String accountId = account.getString("id");
-                CheckBox option = new CheckBox(this); option.setText(account.optString("label", "Account " + accountId)); option.setChecked(selected.contains(accountId)); option.setOnCheckedChangeListener((button, checked) -> { if (checked) selected.add(accountId); else selected.remove(accountId); }); root.addView(option);
+                CheckBox option = new CheckBox(this); option.setText(AccountText.widgetName(account)); option.setChecked(selected.contains(accountId)); option.setOnCheckedChangeListener((button, checked) -> { if (checked) selected.add(accountId); else selected.remove(accountId); }); root.addView(option);
             }
         } catch (Exception ignored) { }
         Button save = new Button(this); save.setText(R.string.add_widget); root.addView(save);

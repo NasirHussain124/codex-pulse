@@ -1,4 +1,5 @@
 /* Full-height quota pills, inspired by the Android battery widget. */
+.pair-link-input { width: 100%; min-width: 0; border: 1px solid #575362; background: #25232d; color: #ddd4ee; border-radius: 10px; padding: 10px; font-size: 11px; }
 html:has(.widget-mode) { background: #252536; scrollbar-gutter: auto; }
 .widget-mode { min-height: 100dvh; background: #252536; color: #eee6ff; --muted: #c0b5d2; --accent: #d2baff; }
 .battery-widget { padding: 23px 20px 17px; max-width: 620px; margin: auto; }
@@ -35,3 +36,16 @@ html:has(.widget-mode) { background: #252536; scrollbar-gutter: auto; }
 .widget-design-preview .quota-pill { min-height: 65px; }.widget-design-preview .quota-pill-copy strong { font-size: 14px; }.widget-design-preview .quota-pill-value { font-size: 22px; }
 @media (max-width: 370px) { .battery-widget { padding: 18px 12px; }.quota-pill { padding: 14px; gap: 9px; }.quota-pill-copy strong { font-size: 14px; }.quota-pill-value { font-size: 23px; } }
 @media (prefers-reduced-motion: reduce) { .quota-pill-fill { transition: none; } }
+/* Pixel-inspired overview: one calm surface, expressive figures, quiet controls. */
+.battery-widget-heading h1 { font-size: 22px; font-weight: 500; }
+.battery-widget-body { background: #302c3e; border-radius: 28px; padding: 8px 20px; }
+.quota-pills { background: transparent; border-radius: 0; padding: 0; gap: 0; }
+.quota-pill, .quota-pill.selected, .quota-pill.unreported { background: transparent; color: #eee7f8; border-radius: 12px; min-height: 70px; padding: 14px 0 19px; gap: 12px; }
+.quota-pill-icon { display: none; }
+.quota-pill-copy strong { font-size: 15px; font-weight: 400; }
+.quota-pill-copy small { display: none; }
+.quota-pill-value { font-size: 32px; font-weight: 300; letter-spacing: -1px; color: #d8c5f6; }
+.quota-pill::before { content: ''; position: absolute; z-index: -1; left: 0; right: 0; bottom: 8px; height: 4px; border-radius: 10px; background: #4a4258; }
+.quota-pill-fill { top: auto; bottom: 8px; height: 4px; border-radius: 10px; background: #cbb7ec; }
+.quota-pill:hover:not(:disabled) { box-shadow: none; background: #ffffff06; }
+.widget-design-preview .quota-pills { background: #302c3e; border-radius: 23px; padding: 0 18px; }

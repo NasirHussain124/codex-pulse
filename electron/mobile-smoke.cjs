@@ -23,7 +23,7 @@ async function testMobile(root, state) {
     const paired = await request('/v1/pair', { code: pairing.code, name: 'Synthetic lifecycle phone' });
     if (paired.status !== 200 || !qr.startsWith('data:image/png;base64,')) throw new Error('Packaged QR pairing failed.');
     const snapshot = await request('/v1/snapshot', null, paired.data.token);
-    if (snapshot.status !== 200 || snapshot.data.accounts.length !== 4 || snapshot.data.accounts.some(row => 'identity' in row || 'email' in row)) throw new Error('Packaged mobile projection failed.');
+    if (snapshot.status !== 200 || snapshot.data.accounts.length !== 4 || snapshot.data.accounts.some(row => 'identity' in row || 'tokens' in row || state().settings.privacy && 'email' in row)) throw new Error('Packaged mobile projection failed.');
     const disk = fs.readFileSync(file, 'utf8');
     if (disk.includes('PRIVATE KEY') || disk.includes(paired.data.token) || readSecret().devices.length !== 1) throw new Error('Mobile encryption check failed.');
     bridge.revoke(paired.data.id);

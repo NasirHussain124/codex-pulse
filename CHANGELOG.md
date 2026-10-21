@@ -1,5 +1,19 @@
 # Changes
 
+## 0.4.0 — 2026-10-21
+
+- Fixed pairing-link copy permission errors with a validated native clipboard action.
+- Device sign-in codes use the same native clipboard path; browser permissions stay restricted.
+- Phone sync now carries real account names and custom labels. Emails are included
+  only when the PC's Show emails setting is enabled.
+- Replaced the legacy scan activity with an in-app QR scanner: runtime camera
+  permissions, permission-denial/camera-error states, cancellation and manual fallback.
+- Pixel-inspired mobile widgets: Material You colors, clean typography and quiet
+  quota bars. Exact Android 12+ host sizes and legacy portrait/landscape layouts
+  prevent one-row widgets with large unused space.
+- Compact mobile account cards, automatic foreground sync, and real identities
+  in widget configuration. Stored credentials, phone pairing and widget choices remain intact.
+
 ## 0.3.0 — 2026-10-21
 
 - Renamed the desktop app, Android companion, shortcuts and tray to Quota management.

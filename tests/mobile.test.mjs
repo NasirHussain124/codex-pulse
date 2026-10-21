@@ -25,13 +25,24 @@ async function withBridge(t, options = {}) {
 }
 test('mobile snapshot is an explicit metadata allowlist, never a credential transport', () => {
   const data = publicSnapshot(sample), serialized = JSON.stringify(data);
-  assert.equal(data.accounts[0].label, 'Account 1'); assert.equal(data.accounts[0].windows[0].remainingPercent, 75);
+  assert.equal(data.accounts[0].label, 'secret'); assert.equal(data.accounts[0].windows[0].remainingPercent, 75);
   for (const secret of ['secret-identity', 'secret@example.test', 'NEVER-SHARE', 'access_token']) assert.equal(serialized.includes(secret), false);
 });
 test('untrusted/public bind addresses are rejected', async () => {
   const bridge = new MobileBridge({ readSecret: () => null, writeSecret: () => {}, getState: () => sample });
   for (const ip of ['0.0.0.0', '8.8.8.8', '127.0.0.1', 'example.test']) await assert.rejects(bridge.start(ip), /private/);
   assert.equal(privateAddress('172.16.2.2'), true); assert.equal(privateAddress('172.32.2.2'), false);
+});
+
+test('phone gets real account names, custom labels and privacy-controlled emails', () => {
+  const settings = { accounts: {}, privacy: false };
+  const account = publicSnapshot({ ...sample, settings }).accounts[0];
+  assert.equal(account.label, 'secret'); assert.equal(account.email, 'secret@example.test');
+  const named = publicSnapshot({ ...sample, settings: { ...settings, accounts: { 'secret-identity': { label: 'Personal' } } } }).accounts[0];
+  assert.equal(named.label, 'Personal'); assert.equal(named.email, 'secret@example.test');
+  const privateAccount = publicSnapshot({ ...sample, settings: { ...settings, privacy: true } }).accounts[0];
+  assert.equal('email' in privateAccount, false);
+  assert.equal(JSON.stringify(account).includes('NEVER-SHARE'), false);
 });
 test('TLS pin mismatch fails closed', async t => {
   const bridge = await withBridge(t); await assert.rejects(request(bridge, '/v1/snapshot', { pin: '00'.repeat(32) }), /pin mismatch/);

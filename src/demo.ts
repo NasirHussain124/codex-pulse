@@ -16,6 +16,6 @@ export function demoState(desktop = false): AppState {
       accounts: { '0000000000000000': { label: 'Personal', pinned: true }, '0000000000000001': { label: 'Northstar', pinned: true }, '0000000000000002': { label: 'Studio builds', pinned: false }, '0000000000000003': { label: 'Research', pinned: false } } },
     history: Array.from({ length: 7 }, (_, i) => ({ at: new Date(stamp - (6 - i) * 86400000).toISOString(), accounts: accounts.filter(a => a.windows.length).map((a, j) => ({ identity: a.identity, fetchedAt: new Date(stamp - (6 - i) * 86400000 - 60000).toISOString(), windows: a.windows.map(w => ({ ...w, remainingPercent: Math.min(100, w.remainingPercent + (6 - i) * (3 + j * 1.5)), usedPercent: Math.max(0, w.usedPercent - (6 - i) * (3 + j * 1.5)) })) })) })),
     events: [{ id: '1', kind: 'refresh', title: 'Usage refreshed across 3 accounts', at: after(-1) }, { id: '2', kind: 'switch', title: 'Personal selected for the next launch', at: after(-24) }, { id: '3', kind: 'account', title: 'Northstar account added securely', at: after(-138) }],
-    refreshing: false, engineError: null, desktop, demo: true, version: '0.3.0',
+    refreshing: false, engineError: null, desktop, demo: true, version: '0.4.0',
   };
 }

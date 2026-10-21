@@ -1,5 +1,5 @@
 const { app, BrowserWindow, ipcMain, nativeImage, Tray, Menu, Notification,
-  nativeTheme, dialog, shell, protocol, net, powerMonitor, session, screen, safeStorage } = require('electron');
+  nativeTheme, dialog, shell, protocol, net, powerMonitor, session, screen, safeStorage, clipboard } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
 const { pathToFileURL } = require('node:url');
@@ -8,6 +8,7 @@ const { createStore } = require('./store.cjs');
 const { LoginManager, DEVICE_URL } = require('./login.cjs');
 const { loadLocalAccounts, validSnapshot } = require('./bootstrap.cjs');
 const { MobileBridge } = require('./mobile.cjs');
+const { copyPairingLink } = require('./pairing.cjs');
 const { APP_NAME, userDataPath } = require('./branding.cjs');
 
 app.setAppUserModelId('com.codexpulse.desktop');
@@ -186,6 +187,13 @@ app.whenReady().then(async () => {
   handle('pulse:mobile-start', (address) => getMobile().start(address));
   handle('pulse:mobile-stop', () => getMobile().stop());
   handle('pulse:mobile-revoke', (id) => getMobile().revoke(id));
+  handle('pulse:login-copy-code', () => {
+    const code = login?.status?.code;
+    if (typeof code !== 'string' || !/^[A-Z0-9-]{4,32}$/i.test(code)) throw new Error('No active device code to copy.');
+    clipboard.writeText(code); return true;
+  });
+  handle('pulse:mobile-copy-pair', (text) => copyPairingLink(text, clipboard));
+  handle('pulse:android-download', () => shell.openExternal('https://raw.githubusercontent.com/NasirHussain124/codex-pulse/refs/heads/codex/android-download-v0.4.0/Quota-management-Android.apk'));
   handle('pulse:mobile-cancel-pair', () => getMobile().cancelPair());
   handle('pulse:mobile-pair', async () => {
     const payload = getMobile().pair();

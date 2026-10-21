@@ -28,6 +28,8 @@ export interface PulseAPI {
   reportView?(count: number, revision: number): Promise<void>;
   quit?(): Promise<void>;
   mobileStatus?(): Promise<MobileStatus>; mobileStart?(address: string): Promise<MobileStatus>; mobileStop?(): Promise<MobileStatus>;
+  copyLoginCode?(): Promise<boolean>;
+  mobileCopyPair?(text: string): Promise<boolean>; mobileDownload?(): Promise<unknown>;
   mobilePair?(): Promise<{ text: string; qr: string; expiresAt: number }>; mobileCancelPair?(): Promise<void>; mobileRevoke?(id: string): Promise<MobileStatus>;
 }
 declare global { interface Window { pulse?: PulseAPI } }

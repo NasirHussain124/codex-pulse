@@ -26,14 +26,14 @@ public class CompanionViewTest {
         try (var activity = Robolectric.buildActivity(MainActivity.class).setup()) {
             assertNotNull(activity.get().getWindow().getDecorView());
             String text = text(activity.get().getWindow().getDecorView());
-            assertTrue(text.contains("Your limits.")); assertTrue(text.contains("Scan pairing QR"));
+            assertTrue(text.contains("Your Codex usage")); assertTrue(text.contains("Scan pairing QR"));
         }
     }
     @Test public void widgetInflatesAndUnpairedStateIsHonest() {
         Context context = RuntimeEnvironment.getApplication();
         var views = new android.widget.RemoteViews(context.getPackageName(), R.layout.widget);
         var view = views.apply(context, new android.widget.FrameLayout(context));
-        assertEquals("Pair your PC in the app", ((TextView)view.findViewById(R.id.widget_status)).getText().toString());
+        assertEquals("Tap to connect", ((TextView)view.findViewById(R.id.widget_status)).getText().toString());
     }
     @Test public void widgetConfigurationOpensWithARealGeneratedViewId() {
         Context context = RuntimeEnvironment.getApplication();

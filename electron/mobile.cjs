@@ -9,7 +9,8 @@ function addresses() {
 function publicSnapshot(state) {
   return { schemaVersion: 1, generatedAt: state.snapshot.generatedAt, servedAt: new Date().toISOString(),
     refreshing: Boolean(state.refreshing), accounts: state.snapshot.accounts.map(account => ({
-      id: account.id, label: state.settings.accounts[account.identity]?.label || `Account ${account.id}`,
+      id: account.id, label: state.settings.accounts[account.identity]?.label || account.email?.split('@')[0] || `Account ${account.id}`,
+      ...(state.settings.privacy === false && account.email ? { email: account.email } : {}),
       selected: Boolean(account.selected), status: account.status, fetchedAt: account.fetchedAt,
       windows: account.status === 'reconnect' ? [] : account.windows.map(window => ({
         id: window.id, label: window.label, durationMinutes: window.durationMinutes,

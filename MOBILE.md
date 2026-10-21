@@ -1,4 +1,4 @@
-# Android companion — 0.3.0 release candidate
+# Android companion — 0.4.0 release candidate
 
 The companion only displays Codex quota. It cannot sign in to Codex, switch an
 account, change the vault, or close an application. No OpenAI tokens or passwords
@@ -6,16 +6,17 @@ are transferred to the phone. The desktop continues to use ccswap 0.39.2.
 
 ## First connection
 
-1. Install the Android APK from this repository's private release on your phone.
+1. Install the Android APK from this repository's public release on your phone.
    The development APK is debug-signed, not a Play Store production build.
 2. Connect the phone and PC to the same trusted private Wi-Fi/Ethernet network.
 3. In Quota management, choose **Phone companion**, select the private PC address,
    and enable the connection. If Windows asks, allow the private network only.
 4. Generate a QR code. In the Android app choose **Scan pairing QR**, inspect
    the confirmation, and pair. A copied pairing link is also supported.
-5. Give accounts custom names on the PC to recognize them on the phone.
-   Unnamed accounts are shown as Account 1, Account 2, etc.; email fields and
-   internal account identities are not shared.
+5. Account names come from the real account or your custom PC label. Enable
+   **Show emails** in the PC dashboard to include account emails on the phone.
+   With emails hidden, only names and quota are shared; internal identities and
+   login credentials are never shared. Refresh the phone after changing this setting.
 6. Choose **Add home-screen widget**, or use your launcher's widget picker.
    Configure the accounts and 5-hour/7-day window. Resize it to fit more rows;
    extra accounts remain available in the app.
@@ -34,7 +35,8 @@ updates (30-minute periodic fallback); these are not exact/live guarantees.
 
 If the PC is asleep, fully closed, offline, or on another network, the phone
 retains encrypted cached readings and marks the failed connection. Widget rows
-include their observation time even when Android delays an update. A countdown
+retain observation times in their accessibility description; a quiet Saved
+label appears when readings are old. A countdown
 reaching zero never invents a fresh 100% quota reading.
 
 ## Security design
