@@ -39,6 +39,9 @@ async function runSmoke({ app, window, createWindow, showQuickView, hideQuickVie
     report.secureBridge = initial.bridge;
     report.nativeClipboardBridge = await js(`typeof window.pulse.mobileCopyPair === 'function' && typeof window.pulse.copyLoginCode === 'function'`);
     report.allFourVisible = initial.visible;
+    report.ledgerWindowOrder = await js(`[...document.querySelectorAll('.account-entry')].every(row => [...row.querySelectorAll('.quota-cell')].map(cell => cell.dataset.window).join(',') === 'five_hour,weekly' && [...row.querySelectorAll('.quota-title>span')].map(label => label.textContent).join(',') === '5h,7 days')`);
+    report.ledgerCleanRows = await js(`!document.querySelector('.credit-cell') && [...document.querySelectorAll('.entry-identity')].every(row => !row.innerText.includes('Last seen')) && document.querySelector('.active-marker')?.textContent.includes('Selected')`);
+    report.ledgerKeyboardTargets = await js(`[...document.querySelectorAll('.quota-cell')].every(cell => cell.tagName === 'BUTTON' && cell.tabIndex === 0 && (cell.getAttribute('aria-label').includes('remaining') || cell.getAttribute('aria-label').includes('quota not reported')))`);
     report.ledgerOnly = await js(`!document.querySelector('select[aria-label="Dashboard view"]') && !document.body.innerText.includes('watching all accounts')`);
     await js(`document.querySelector('.companion-shortcut button').click()`);
     await pause();
@@ -47,6 +50,8 @@ async function runSmoke({ app, window, createWindow, showQuickView, hideQuickVie
     await js(`document.querySelector('button[aria-label="Close dialog"]').click()`);
     await pause();
     await capture(window, 'codex-pulse-smoke.png');
+    const ledgerClip = await js(`(() => { const top = document.querySelector('.account-summary').getBoundingClientRect(), bottom = document.querySelector('.ledger-list').getBoundingClientRect(); return { x: Math.floor(top.left), y: Math.floor(top.top), width: Math.ceil(top.width), height: Math.ceil(bottom.bottom - top.top) }; })()`);
+    fs.writeFileSync(path.join(output, 'codex-pulse-ledger-5h-7days.png'), (await window.webContents.capturePage(ledgerClip)).toPNG());
     await js(`document.querySelector('[aria-label="Chart quota window"]').click()`);
     await pause();
     report.themedDropdown = await js(`(() => { const menu = document.querySelector('.pulse-select-menu'); return menu?.getAttribute('role') === 'listbox' && getComputedStyle(menu).backgroundColor === 'rgb(32, 35, 27)' && menu.querySelectorAll('[role="option"]').length === 2 && menu.querySelector('[aria-selected="true"]').textContent.includes('7-day limit'); })()`);
@@ -91,6 +96,8 @@ async function runSmoke({ app, window, createWindow, showQuickView, hideQuickVie
     await js(`(() => { const button = document.querySelector('.account-name'); button.focus(); button.click(); })()`);
     await pause();
     report.accountPanel = await js(`Boolean(document.querySelector('.account-drawer[role="dialog"]')) && document.querySelector('.drawer-identity h3').textContent === 'Personal' && document.querySelector('main').inert && document.activeElement.getAttribute('aria-label') === 'Close account panel'`);
+    report.drawerQuotaOrder = await js(`[...document.querySelectorAll('.drawer-quota>div:first-child>span')].map(label => label.textContent).join(',') === '5h,7 days'`);
+    report.drawerFactsPreserved = await js(`['Credits', 'Banked resets', 'Last reading'].every(label => document.querySelector('.drawer-facts').textContent.includes(label))`);
     await js(`(() => { const trigger = document.querySelector('[aria-label="Account in panel"]'); trigger.focus(); trigger.click(); })()`);
     await pause();
     await js(`document.querySelector('[aria-label="Account in panel"]').dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))`);

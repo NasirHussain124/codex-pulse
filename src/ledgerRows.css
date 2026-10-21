@@ -1,0 +1,63 @@
+/* Account ledger: identity, 5h, 7 days, actions. Extra metadata lives in the drawer. */
+.account-summary.provider-summary { padding: 12px 16px; margin-bottom: 10px; background: #1a1d17; border-color: #34382f; border-radius: 13px; }
+.account-summary .summary-caption { font-size: 11px; color: #8f998d; }
+.account-summary .summary-count { font-size: 11px; color: #a6afa0; }
+.ledger-list { border: 1px solid #30352d; border-radius: 15px; background: #151813; }
+.ledger-list .account-entry { grid-template-columns: minmax(220px, 1.12fr) minmax(180px, 1fr) minmax(180px, 1fr) 174px; gap: 28px; min-height: 88px; padding: 12px 18px; border-radius: 0; border-color: #2b3129; }
+.ledger-list .account-entry:first-child { border-radius: 15px 15px 0 0; }
+.ledger-list .account-entry:last-child { border-bottom: 0; border-radius: 0 0 15px 15px; }
+.ledger-list .account-entry:only-child { border-radius: 15px; }
+.ledger-list .account-entry:hover, .ledger-list .account-entry:focus-within { background: #1c221a; }
+.ledger-list .account-entry.selected-entry { background: linear-gradient(90deg, #24382a55, transparent 42%); }
+.ledger-list .entry-identity { display: flex; align-items: center; gap: 11px; }
+.ledger-list .account-avatar { width: 32px; height: 34px; display: grid; place-items: center; border-radius: 10px; flex-shrink: 0; font-size: 13px; font-weight: 600; color: #a9ccb4; background: #28382b; border: 1px solid #445c4938; }
+.ledger-list .account-copy { display: block; min-width: 0; }
+.ledger-list .account-copy>div { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.ledger-list .account-name { font-family: inherit; font-size: 15px; font-weight: 600; letter-spacing: -.2px; line-height: 1.4; color: #e7ece0; }
+.ledger-list .entry-identity p { font-size: 11px; line-height: 1.5; margin-top: 4px; color: #9ba696; }
+.ledger-list .plan-label { font-size: 8px; border-color: #424b3b; color: #adb69f; border-radius: 4px; padding: 2px 4px; }
+.ledger-list .active-marker { font-size: 9px; gap: 4px; color: #a2cfb0; }
+.ledger-list .entry-identity small { font-size: 10px; margin-top: 3px; }
+.ledger-list .quota-cell { display: block; width: 100%; padding: 3px 0; text-align: left; min-width: 0; border-radius: 7px; }
+.ledger-list .quota-cell:focus-visible { outline: 2px solid #a5cdb1; outline-offset: 5px; }
+.ledger-list .quota-title { display: flex; justify-content: space-between; gap: 10px; font-size: 12px; font-weight: 500; color: #b5c0ae; line-height: 1.15; }
+.ledger-list .quota-title strong { font-size: 23px; font-weight: 500; letter-spacing: -.6px; color: #e5eddd; font-variant-numeric: tabular-nums; }
+.ledger-list .quota-title strong small { font-size: 12px; font-weight: 400; margin-left: 2px; letter-spacing: 0; color: #a4b09c; }
+.ledger-list .ledger-track { display: block; height: 4px; margin: 8px 0 7px; background: #30372a; }
+.ledger-list .ledger-track>i { display: block; height: 100%; border-radius: inherit; }
+.ledger-list .ledger-track>i.green { background: #84b89b; }.ledger-list .ledger-track>i.amber { background: #d2b76e; }.ledger-list .ledger-track>i.red { background: #d58a80; }
+.ledger-list .reset-caption { display: block; font-size: 10px; color: #929f8b; line-height: 1.35; white-space: normal; }
+.ledger-list .unknown .quota-title, .ledger-list .unknown .quota-title strong, .ledger-list .unknown .reset-caption { color: #8f9689; }
+.ledger-list .entry-actions { display: flex; flex-wrap: nowrap; justify-content: flex-end; gap: 7px; margin: 0; grid-column: auto; }
+.ledger-list .entry-actions>button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; color: #b4c3ac; font-size: 11px; min-height: 32px; border-radius: 8px; }
+.ledger-list .row-refresh { width: 32px; flex-shrink: 0; }.ledger-list .row-refresh:hover:not(:disabled) { background: #ffffff08; }
+.ledger-list .row-manage { padding: 0 9px; background: #242d20; border: 1px solid #3d4b3555; }
+.ledger-list .row-manage:hover:not(:disabled) { background: #303e29; }
+.ledger-list .account-menu-wrap>.icon-btn { width: 27px; height: 32px; }
+@media (min-width: 1650px) {
+  .ledger-list .account-entry { min-height: 100px; padding: 16px 22px; gap: 40px; }
+  .ledger-list .account-name { font-size: 17px; }.ledger-list .entry-identity p { font-size: 12px; }
+  .ledger-list .quota-title { font-size: 13px; }.ledger-list .quota-title strong { font-size: 26px; }
+  .ledger-list .reset-caption { font-size: 11px; }
+}
+@media (max-width: 1100px) {
+  .ledger-list .account-entry { grid-template-columns: minmax(180px, 1.12fr) minmax(140px, 1fr) minmax(140px, 1fr) 174px; gap: 20px; padding-left: 14px; padding-right: 14px; }
+}
+@media (max-width: 900px) {
+  .ledger-list .account-entry { grid-template-columns: minmax(170px, 1fr) minmax(120px, 1fr) minmax(120px, 1fr); gap: 16px; }
+  .ledger-list .entry-actions { grid-column: 1/-1; justify-content: flex-end; margin-top: -8px; }
+}
+@media (min-width: 1001px) and (max-width: 1649px) and (max-height: 1050px) {
+  .ledger-list .account-entry { min-height: 78px; padding-top: 8px; padding-bottom: 8px; }
+  .ledger-list .quota-cell { padding-top: 0; padding-bottom: 0; }
+  .account-summary.provider-summary { padding-top: 8px; padding-bottom: 8px; margin-bottom: 8px; }
+  .forecast-section .chart-layout { height: 130px; }
+}
+@media (max-width: 550px) {
+  .account-summary .summary-caption { display: none; }
+  .ledger-list .account-entry { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); padding: 15px; gap: 15px; }
+  .ledger-list .entry-identity { grid-column: 1/-1; }.ledger-list .account-copy { flex: 1; }
+  .ledger-list .entry-identity p { white-space: nowrap; font-size: 11px; }
+  .ledger-list .entry-actions { grid-column: 1/-1; margin-top: 0; }
+  .ledger-list .account-menu-wrap { margin-left: 0; }.ledger-list .quota-title strong { font-size: 23px; }
+}

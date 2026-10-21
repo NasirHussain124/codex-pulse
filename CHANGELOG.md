@@ -1,5 +1,17 @@
 # Changes
 
+## Windows 0.5.1 — 2026-10-21
+
+- Redesigned account ledger: account identity, 5h, 7 days and clear details actions.
+- Larger readable percentages, quiet reset countdowns, rounded grouped rows and
+  keyboard-accessible quota cells. All four sample accounts fit the standard
+  desktop viewport without reducing the new percentage typography.
+- Credits, banked resets and reading timestamps remain in Account details rather
+  than crowding every row. Selected-login badges no longer claim a running account
+  is active in another application.
+- Exact-window, zero, invalid/missing, stale and passed-reset handling is tested.
+- Desktop-only patch; Android remains 0.5.0 and phone pairing is preserved.
+
 ## 0.5.0 — 2026-10-21
 
 - Windows Q tray icon opens a frameless quick-usage popover with both quota limits

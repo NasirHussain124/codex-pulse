@@ -12,7 +12,7 @@ Previously named Codex Pulse. Upgrades retain the original desktop data director
 Windows application ID, Android package and encryption aliases so saved accounts
 and phone pairings are preserved. Internal executable/protocol names remain stable.
 
-**0.5.0 release candidate:** Windows desktop + native Android usage viewer and
+**Windows 0.5.1 / Android 0.5.0 release candidate:** desktop + native Android usage viewer and
 home-screen widget. Local-first, Codex-only, no analytics. This is an independent
 project, not an official OpenAI app. See [MOBILE.md](MOBILE.md) for pairing and
 [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) for production-validation gates.
@@ -20,6 +20,8 @@ project, not an official OpenAI app. See [MOBILE.md](MOBILE.md) for pairing and
 ## What works
 
 - Multi-account ledger, search, sorting, custom names, and email masking.
+- Clean 5h / 7 days account rows with readable percentages and short reset
+  countdowns. Credits, banked resets and timestamps remain in Account details.
 - Codex-only quota-management header and a right-side account panel: click the
   Codex tab or any account row, choose an account, review quota, rename, refresh,
   reconnect, remove, or explicitly select it for the next compatible Codex launch.
@@ -159,7 +161,7 @@ schedule. They do not trigger account changes, spend credits, or redeem resets.
 
 ## Release status
 
-This is a functional **0.5.0 desktop + Android release candidate**, not a claim of completed
+This is a functional **Windows 0.5.1 / Android 0.5.0 release candidate**, not a claim of completed
 production validation. See [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) for the
 remaining public-release gates. A signing certificate and real account testing
 must be supplied by the product owner before public distribution.

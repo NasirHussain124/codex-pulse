@@ -1,5 +1,17 @@
 # Desktop verification — 2026-10-21
 
+## Windows 0.5.1
+
+- 50 Node tests passed, including exact independent ledger windows, genuine zero,
+  missing/invalid/expired quota, stale readings and reset deadlines.
+- 53 desktop interaction checks cover the 5h / 7 days ordering, keyboard-focusable
+  quota buttons, reduced row clutter, preserved detail-panel facts, four-account
+  viewport fitting, and the existing dashboard, tray and widget behavior.
+- Production TypeScript/Vite build passed; synthetic native visual inspection
+  covered the redesigned ledger and narrower screens.
+- Windows-only patch. Android remains 0.5.0; no account store, provider engine,
+  pairing identity or credential format changed.
+
 ## 0.5.0
 
 - 47 Node tests passed, including monitor/taskbar popover geometry and exact

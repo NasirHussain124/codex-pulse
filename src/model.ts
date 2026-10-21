@@ -19,9 +19,9 @@ export function age(value: string | null): string {
   if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
   return `${Math.floor(seconds / 86400)}d ago`;
 }
-export function countdown(value: string | null): string {
+export function countdown(value: string | null, now = Date.now()): string {
   if (!value) return 'Reset unavailable';
-  const delta = new Date(value).getTime() - Date.now();
+  const delta = new Date(value).getTime() - now;
   if (!Number.isFinite(delta)) return 'Reset unavailable';
   if (delta <= 0) return 'Awaiting refresh';
   const mins = Math.ceil(delta / 60000), days = Math.floor(mins / 1440), hours = Math.floor((mins % 1440) / 60);

@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './LedgerApp';
 import './ledger.css';
+import './ledgerRows.css';
 import './widget.css';
 
 class Boundary extends React.Component<React.PropsWithChildren, { failed: boolean }> {
