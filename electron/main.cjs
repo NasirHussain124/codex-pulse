@@ -10,6 +10,7 @@ const { loadLocalAccounts, validSnapshot } = require('./bootstrap.cjs');
 const { MobileBridge } = require('./mobile.cjs');
 const { copyPairingLink } = require('./pairing.cjs');
 const { APP_NAME, userDataPath } = require('./branding.cjs');
+const { popoverBounds } = require('./popover.cjs');
 
 app.setAppUserModelId('com.codexpulse.desktop');
 app.setPath('userData', userDataPath(app.getPath('appData')));
@@ -26,6 +27,7 @@ const primaryInstance = app.requestSingleInstanceLock();
 if (!primaryInstance) app.quit();
 let mainWindow, widgetWindow, tray, engine, store, login, pollTimer, refreshing = false, quitting = false;
 let mobile;
+let quickWindow, quickReady = false, quickWanted = false, lastQuickBlur = 0;
 let snapshot = { schemaVersion: 1, generatedAt: null, accounts: [], engine: { name: 'ccswap', version: '0.39.2', secureStorage: 'Windows DPAPI' } };
 let engineError = null, history = [], events = [], initialized = false, revision = 0, startupSource = 'loading';
 const thresholdNotices = new Set();
@@ -42,6 +44,7 @@ function publish() {
   revision++;
   for (const win of BrowserWindow.getAllWindows()) if (!win.isDestroyed()) win.webContents.send('pulse:changed', state());
   tray?.setToolTip(`${APP_NAME} · ${snapshot.accounts.length} saved accounts`);
+  if (quickWindow?.isVisible()) positionQuickView();
   writeHealth();
 }
 function event(kind, title) {
@@ -102,7 +105,7 @@ function secureWindow(win) {
 function createWindow(widget = false) {
   const area = screen.getPrimaryDisplay().workAreaSize;
   const width = widget ? 420 : smoke || lifecycle ? 1500 : Math.min(1500, area.width - 28);
-  const height = widget ? 590 : smoke || lifecycle ? 1000 : Math.min(1000, area.height - 28);
+  const height = widget ? 420 : smoke || lifecycle ? 1000 : Math.min(1000, area.height - 28);
   const win = new BrowserWindow({ width, height,
     minWidth: widget ? 350 : Math.min(980, width), minHeight: widget ? 360 : Math.min(720, height), title: widget ? `${APP_NAME} · Widget` : APP_NAME,
     show: false, autoHideMenuBar: true, backgroundColor: widget ? '#252536' : '#141311',
@@ -125,9 +128,47 @@ function createWindow(widget = false) {
 }
 function showDashboard() {
   if (!store || !primaryInstance) return;
+  hideQuickView();
   if (!mainWindow || mainWindow.isDestroyed()) mainWindow = createWindow();
   if (mainWindow.isMinimized()) mainWindow.restore();
   mainWindow.show(); mainWindow.focus(); publish();
+}
+function positionQuickView(anchor) {
+  if (!quickWindow || quickWindow.isDestroyed()) return;
+  anchor ||= tray?.getBounds();
+  if (!anchor?.width || !anchor?.height) { const point = screen.getCursorScreenPoint(); anchor = { ...point, width: 1, height: 1 }; }
+  const display = screen.getDisplayMatching(anchor);
+  quickWindow.setBounds(popoverBounds(anchor, display.workArea, demo ? 4 : snapshot.accounts.length), false);
+}
+function hideQuickView() { quickWanted = false; if (quickWindow && !quickWindow.isDestroyed()) quickWindow.hide(); }
+function showQuickView(toggle = false, anchor) {
+  if (toggle && (quickWindow?.isVisible() || Date.now() - lastQuickBlur < 180)) { hideQuickView(); return; }
+  quickWanted = true;
+  if (!quickWindow || quickWindow.isDestroyed()) {
+    quickReady = false;
+    quickWindow = new BrowserWindow({ width: 400, height: 334, title: `${APP_NAME} · Quick view`,
+      show: false, frame: false, resizable: false, minimizable: false, maximizable: false,
+      fullscreenable: false, skipTaskbar: true, alwaysOnTop: true, backgroundColor: '#232229',
+      roundedCorners: true, autoHideMenuBar: true, icon: path.join(app.getAppPath(), 'dist', 'pulse.ico'),
+      webPreferences: { preload: path.join(__dirname, 'preload.cjs'), nodeIntegration: false, contextIsolation: true, sandbox: true, webSecurity: true } });
+    const win = quickWindow; secureWindow(win);
+    win.on('page-title-updated', event => event.preventDefault());
+    win.on('focus', () => { if (!win.isAlwaysOnTop()) win.setAlwaysOnTop(true); });
+    win.on('blur', () => { lastQuickBlur = Date.now(); hideQuickView(); });
+    win.on('closed', () => { quickWindow = null; quickReady = false; quickWanted = false; });
+    win.webContents.on('before-input-event', (_event, input) => { if (input.type === 'keyDown' && input.key === 'Escape') hideQuickView(); });
+    win.webContents.on('did-finish-load', publish);
+    win.once('ready-to-show', () => { quickReady = true; if (quickWanted) { positionQuickView(); win.show(); win.focus(); win.setAlwaysOnTop(true); publish(); } });
+    const query = '?quick=1' + (demo ? '&demo=1' : '');
+    win.loadURL(!app.isPackaged && process.env.PULSE_DEV_URL === 'http://127.0.0.1:5184' ? process.env.PULSE_DEV_URL + '/' + query : 'pulse://app/index.html' + query);
+  }
+  positionQuickView(anchor);
+  if (quickReady) { quickWindow.show(); quickWindow.focus(); quickWindow.setAlwaysOnTop(true); publish(); }
+}
+function showPinnedWidget() {
+  hideQuickView();
+  if (!widgetWindow || widgetWindow.isDestroyed()) { widgetWindow = createWindow(true); widgetWindow.on('closed', () => { widgetWindow = null; }); }
+  else { widgetWindow.show(); widgetWindow.focus(); }
 }
 function trusted(event) {
   const sender = event.senderFrame?.url || '';
@@ -193,7 +234,7 @@ app.whenReady().then(async () => {
     clipboard.writeText(code); return true;
   });
   handle('pulse:mobile-copy-pair', (text) => copyPairingLink(text, clipboard));
-  handle('pulse:android-download', () => shell.openExternal('https://raw.githubusercontent.com/NasirHussain124/codex-pulse/refs/heads/codex/android-download-v0.4.0/Quota-management-Android.apk'));
+  handle('pulse:android-download', () => shell.openExternal('https://raw.githubusercontent.com/NasirHussain124/codex-pulse/refs/heads/codex/android-download-v0.5.0/Quota-management-Android.apk'));
   handle('pulse:mobile-cancel-pair', () => getMobile().cancelPair());
   handle('pulse:mobile-pair', async () => {
     const payload = getMobile().pair();
@@ -241,7 +282,9 @@ app.whenReady().then(async () => {
     widgetWindow?.setAlwaysOnTop(store.settings.widgetTop);
     schedule(); publish(); return store.settings;
   });
-  handle('pulse:widget', () => { if (!widgetWindow || widgetWindow.isDestroyed()) { widgetWindow = createWindow(true); widgetWindow.on('closed', () => { widgetWindow = null; }); } else widgetWindow.show(); return true; });
+  handle('pulse:widget', () => { showPinnedWidget(); return true; });
+  handle('pulse:quick-view', () => { showQuickView(); return true; });
+  handle('pulse:quick-close', () => { hideQuickView(); return true; });
   handle('pulse:dashboard', () => { showDashboard(); return true; });
   handle('pulse:usage-link', () => shell.openExternal('https://chatgpt.com/codex/settings/usage'));
   handle('pulse:export', async () => {
@@ -257,8 +300,13 @@ app.whenReady().then(async () => {
   const iconFile = path.join(app.getAppPath(), 'dist', 'pulse.ico');
   const trayIcon = fs.existsSync(iconFile) ? nativeImage.createFromPath(iconFile) : nativeImage.createFromDataURL('data:image/svg+xml;base64,' + Buffer.from(svg).toString('base64'));
   tray = new Tray(trayIcon.resize({ width: 20, height: 20 }));
-  tray.setContextMenu(Menu.buildFromTemplate([{ label: 'Open Quota management', click: showDashboard }, { label: 'Refresh usage', click: refresh }, { type: 'separator' }, { label: 'Quit Quota management', click: () => app.quit() }]));
-  tray.on('click', showDashboard);
+  tray.setContextMenu(Menu.buildFromTemplate([{ label: 'Quick usage', click: () => showQuickView() }, { label: 'Open Quota management', click: showDashboard }, { label: 'Pin usage widget', click: showPinnedWidget }, { label: 'Refresh usage', click: refresh }, { type: 'separator' }, { label: 'Quit Quota management', click: () => app.quit() }]));
+  tray.on('click', (_event, bounds) => showQuickView(true, bounds));
+  tray.on('double-click', showDashboard);
+  tray.on('right-click', hideQuickView);
+  screen.on('display-metrics-changed', () => { if (quickWindow?.isVisible()) positionQuickView(); });
+  screen.on('display-removed', hideQuickView);
+  powerMonitor.on('suspend', hideQuickView);
   mainWindow = createWindow();
   if (!lifecycle) { powerMonitor.on('resume', refresh); schedule(); }
   if (!demo && !lifecycle) refresh();
@@ -272,7 +320,7 @@ app.whenReady().then(async () => {
   if (smoke) {
     mainWindow.webContents.once('did-finish-load', async () => {
       const { runSmoke } = require('./smoke.cjs');
-      const ok = await runSmoke({ app, window: mainWindow, createWindow });
+      const ok = await runSmoke({ app, window: mainWindow, createWindow, showQuickView, hideQuickView, getQuickWindow: () => quickWindow, getPinnedWindow: () => widgetWindow });
       app.exit(ok ? 0 : 1);
     });
   }

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { widgetReading } from '../src/widgetModel.ts';
+import { widgetReading, dualWidgetReading } from '../src/widgetModel.ts';
 
 const now = Date.now();
 const account = { id: '1', identity: 'one', email: 'person@example.test', status: 'ready', fetchedAt: new Date(now).toISOString(), windows: [{ durationMinutes: 10080, remainingPercent: 76, resetsAt: new Date(now + 3600000).toISOString() }] };
@@ -23,4 +23,16 @@ test('widget respects email privacy and custom account labels', () => {
   assert.equal(widgetReading(account, settings, now).name, 'person');
   assert.equal(widgetReading(account, { ...settings, privacy: false }, now).name, account.email);
   assert.equal(widgetReading(account, { ...settings, accounts: { one: { label: 'Personal' } } }, now).name, 'Personal');
+});
+test('dual-limit cards isolate both quotas and use compact names without leaking email', () => {
+  const result = dualWidgetReading(account, { ...settings, privacy: false }, now);
+  assert.equal(result.name, 'person'); assert.equal(result.five.percent, null); assert.equal(result.weekly.percent, 76);
+  assert.ok(!result.description.includes(account.email));
+  const both = dualWidgetReading({ ...account, windows: [...account.windows, { durationMinutes: 300, remainingPercent: 0, resetsAt: null }] }, settings, now);
+  assert.equal(both.five.percent, 0); assert.equal(both.weekly.percent, 76);
+});
+test('dual-limit cards flag reconnect and stale data without guessing fresh limits', () => {
+  const result = dualWidgetReading({ ...account, status: 'reconnect' }, settings, now);
+  assert.equal(result.five.percent, null); assert.equal(result.weekly.percent, null); assert.equal(result.status, 'Reconnect');
+  assert.equal(dualWidgetReading({ ...account, fetchedAt: null }, settings, now).status, 'Saved');
 });

@@ -27,6 +27,8 @@ contextBridge.exposeInMainWorld('pulse', Object.freeze({
   setDisabled: (id, disabled) => ipcRenderer.invoke('pulse:disable', id, disabled),
   saveSettings: (value) => ipcRenderer.invoke('pulse:settings', value),
   openWidget: () => ipcRenderer.invoke('pulse:widget'),
+  openQuickView: () => ipcRenderer.invoke('pulse:quick-view'),
+  closeQuickView: () => ipcRenderer.invoke('pulse:quick-close'),
   openDashboard: () => ipcRenderer.invoke('pulse:dashboard'),
   openUsage: () => ipcRenderer.invoke('pulse:usage-link'),
   exportHistory: () => ipcRenderer.invoke('pulse:export'),

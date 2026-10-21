@@ -1,5 +1,20 @@
 # Changes
 
+## 0.5.0 — 2026-10-21
+
+- Windows Q tray icon opens a frameless quick-usage popover with both quota limits
+  for all saved Codex accounts. Click again, click away or press Escape to close.
+- Refresh, pin-to-desktop and dashboard shortcuts. Right-click tray menu and
+  double-click dashboard access remain available. No replacement taskbar or shell.
+- Monitor-aware positioning supports top, bottom and side taskbars, tray overflow
+  and negative multi-monitor origins. Large rosters scroll within a bounded popover.
+- Redesigned desktop and Android widgets with grouped account tiles, quieter
+  colors and separate 5-hour / 7-day values. Android adapts to narrow hosts and
+  accessibility fonts; offline state does not unnecessarily hide account cards.
+- Preserves account vaults, private phone pairing, Android widget selections,
+  application IDs and signing identity. Desktop phone-download action points to
+  the matching Android build.
+
 ## Android 0.4.1 — 2026-10-21
 
 - Compact multi-account widget with both 5-hour and 7-day limits side by side.

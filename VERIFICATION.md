@@ -1,5 +1,26 @@
 # Desktop verification — 2026-10-21
 
+## 0.5.0
+
+- 47 Node tests passed, including monitor/taskbar popover geometry and exact
+  dual-window quota, missing-data, zero, stale and privacy behavior.
+- 48 desktop interaction checks passed: existing dashboard coverage plus quick
+  view data, native visibility/on-top/title, Escape, blur dismissal, window reuse,
+  toggle, dashboard and pin-to-widget actions. The synthetic harness activates its
+  dashboard before the first popup so destruction of a previous test window cannot
+  steal initial focus. Click-away is exercised through the native blur handler.
+- 33 Android tests passed, including native raster previews and label/percentage
+  collision checks at compact/tall sizes, four-account grids, narrow single-column
+  layouts, large text, legacy portrait sizing and safe overflow. Lint has no errors.
+- Windows installer/portable and Android APK assembled. Android keeps package
+  com.codexpulse.companion and the 0.4.x signing certificate; desktop keeps its
+  original install and user-data identities.
+- Native synthetic desktop/Android previews were visually inspected. Physical
+  phone/OEM review, Windows tray customizations, production signing and independent
+  security validation remain release-candidate gates.
+
+## Previous verification
+
 Version 0.4.0, Windows x64 + Android. ccswap 0.39.2 remains the account/quota engine.
 
 Android-only 0.4.1 update: APK assembly, all 30 Android tests and lint passed.

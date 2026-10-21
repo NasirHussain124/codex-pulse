@@ -10,6 +10,7 @@
     <string name="refresh_icon" translatable="false">↻</string>
     <string name="pair_pc">Tap to connect</string>
     <string name="codex_name" translatable="false">Codex</string>
+    <string name="widget_remaining">Remaining</string>
     <string name="five_hour_short">5h</string>
     <string name="weekly_short">7d</string>
     <string name="both_limits">Both 5-hour and 7-day</string>

@@ -13,3 +13,11 @@ export function widgetReading(account: Account, settings: Settings, now = Date.n
   const name = settings.accounts[account.identity]?.label || (!settings.privacy && account.email ? account.email : label(account, settings));
   return { percent, stale, detail, name };
 }
+
+export function dualWidgetReading(account: Account, settings: Settings, now = Date.now()) {
+  const five = widgetReading(account, { ...settings, widgetWindow: 'five_hour' }, now);
+  const weekly = widgetReading(account, { ...settings, widgetWindow: 'weekly' }, now);
+  return { name: label(account, settings), five, weekly,
+    status: account.status === 'reconnect' ? 'Reconnect' : five.stale || weekly.stale ? 'Saved' : '',
+    description: `5-hour: ${five.percent === null ? 'not reported' : Math.round(five.percent) + '% remaining'}. ${five.detail}. 7-day: ${weekly.percent === null ? 'not reported' : Math.round(weekly.percent) + '% remaining'}. ${weekly.detail}.` };
+}

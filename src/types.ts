@@ -24,6 +24,7 @@ export interface PulseAPI {
   switchAccount(id: string): Promise<AppState>; removeAccount(id: string): Promise<AppState>;
   setDisabled(id: string, disabled: boolean): Promise<AppState>; saveSettings(settings: Partial<Settings>): Promise<Settings>;
   openWidget(): Promise<unknown>; openDashboard(): Promise<unknown>; openUsage(): Promise<unknown>; exportHistory(): Promise<boolean>;
+  openQuickView(): Promise<unknown>; closeQuickView(): Promise<unknown>;
   onState(handler: (state: AppState) => void): () => void;
   reportView?(count: number, revision: number): Promise<void>;
   quit?(): Promise<void>;

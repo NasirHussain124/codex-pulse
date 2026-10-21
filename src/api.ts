@@ -8,6 +8,8 @@ const fallback: PulseAPI = {
   startLogin: readonly, cancelLogin: readonly, openLoginPage: readonly, installCodex: readonly,
   saveSettings: async (settings) => ({ ...demoState().settings, ...settings }),
   openWidget: async () => window.open(`${window.location.origin}/?widget=1&demo=1`, 'pulse-widget', 'width=420,height=590'),
+  openQuickView: async () => window.open(`${window.location.origin}/?quick=1&demo=1`, 'pulse-quick', 'width=400,height=390'),
+  closeQuickView: async () => window.close(),
   openDashboard: async () => { window.location.href = '/?demo=1'; },
   openUsage: async () => window.open('https://chatgpt.com/codex/settings/usage', '_blank', 'noopener,noreferrer'),
   exportHistory: readonly, onState: () => () => {},

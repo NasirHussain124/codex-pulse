@@ -26,6 +26,12 @@ import static org.robolectric.Shadows.shadowOf;
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 35)
 public class MobileRegressionTest {
+    private java.util.List<View> cards(View view) {
+        var found = new java.util.ArrayList<View>();
+        if (view.getId() == R.id.row_root) found.add(view);
+        if (view instanceof android.view.ViewGroup) { var group = (android.view.ViewGroup)view; for (int i = 0; i < group.getChildCount(); i++) found.addAll(cards(group.getChildAt(i))); }
+        return found;
+    }
     private JSONObject fixture() throws Exception {
         JSONArray accounts = new JSONArray();
         for (int i = 1; i <= 4; i++) accounts.put(new JSONObject().put("id", "" + i).put("label", "person" + i).put("email", "person" + i + "@example.test").put("status", "ready").put("fetchedAt", java.time.Instant.now().toString()).put("windows", new JSONArray().put(new JSONObject().put("durationMinutes", 10080).put("remainingPercent", 70 + i))));
@@ -64,7 +70,7 @@ public class MobileRegressionTest {
     @Test public void portraitWidgetShowsFourAccountsAndNoDebugParagraph() throws Exception {
         Context context = RuntimeEnvironment.getApplication();
         var view = PulseWidget.createView(context, 57, fixture(), 280).apply(context, new android.widget.FrameLayout(context));
-        assertEquals(4, ((LinearLayout)view.findViewById(R.id.widget_rows)).getChildCount());
+        assertEquals(4, cards(view).size());
         assertEquals(View.GONE, view.findViewById(R.id.widget_status).getVisibility());
         assertEquals("person1", ((TextView)view.findViewById(R.id.row_name)).getText().toString());
         assertEquals(View.GONE, view.findViewById(R.id.row_reset).getVisibility());
@@ -76,11 +82,12 @@ public class MobileRegressionTest {
         assertTrue(PulseWidget.rowsForHeight(160, 1, true) < PulseWidget.rowsForHeight(300, 1, false));
         assertTrue(PulseWidget.rowsForHeight(280, 1.6f, false) < PulseWidget.rowsForHeight(280, 1, false));
     }
-    @Test public void oldLauncherUsesTallPortraitHeightNotShortLandscapeHeight() throws Exception {
+    @Test @Config(qualifiers = "port-mdpi") public void oldLauncherUsesTallPortraitHeightNotShortLandscapeHeight() throws Exception {
         Context context = RuntimeEnvironment.getApplication(); Bundle options = new Bundle();
         options.putInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 150); options.putInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, 280);
         var view = PulseWidget.forOptions(context, 58, fixture(), options).apply(context, new android.widget.FrameLayout(context));
-        assertEquals(4, ((LinearLayout)view.findViewById(R.id.widget_rows)).getChildCount());
+        assertEquals(4, cards(view).size());
+        assertEquals(2, ((LinearLayout)view.findViewById(R.id.widget_rows)).getChildCount());
     }
     @Test public void modernLauncherHasExactSizeLayouts() throws Exception {
         Context context = RuntimeEnvironment.getApplication(); Bundle options = new Bundle();

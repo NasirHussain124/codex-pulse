@@ -3,15 +3,16 @@
 A Windows desktop account and usage manager built on **ccswap 0.39.2**. The
 dark ledger displays all saved Codex accounts together, with separate usage
 windows, remaining percentages, reset countdowns, and connection states.
-The ledger is the dashboard view. The floating widget uses a clean quota overview.
-Android widgets match the app's purple styling and show both 5-hour and 7-day
-limits for multiple accounts in compact rows, adapting to host sizes and text scaling.
+The ledger is the dashboard view. Click the Q system-tray icon for a compact
+usage popover: every account's 5-hour and 7-day limits together, with refresh,
+pin-to-desktop and dashboard actions. Android widgets use calm account cards,
+adapting between a two-column grid and a single column for narrow/larger-text hosts.
 
 Previously named Codex Pulse. Upgrades retain the original desktop data directory,
 Windows application ID, Android package and encryption aliases so saved accounts
 and phone pairings are preserved. Internal executable/protocol names remain stable.
 
-**Windows 0.4.0 / Android 0.4.1 release candidate:** desktop + native Android usage viewer and
+**0.5.0 release candidate:** Windows desktop + native Android usage viewer and
 home-screen widget. Local-first, Codex-only, no analytics. This is an independent
 project, not an official OpenAI app. See [MOBILE.md](MOBILE.md) for pairing and
 [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) for production-validation gates.
@@ -44,7 +45,13 @@ project, not an official OpenAI app. See [MOBILE.md](MOBILE.md) for pairing and
 For a permanent installation, use the Setup executable. Portable builds extract
 to a temporary folder; never create a shortcut to that extracted executable.
 Use **Settings → Quit Quota management** to exit completely. With close-to-tray enabled,
-the window's close button hides it; the tray icon or Start Menu reopens it.
+the window's close button hides it. Left-click the Q tray icon for quick usage;
+double-click it or choose **Dashboard** to reopen the full app. Right-click for
+dashboard, refresh, pin and quit actions. Quick view closes on click-away or
+Escape, and remains bounded to the taskbar's display even with a top/side taskbar.
+If Windows hides the tray icon, move it from the hidden-icons menu beside the clock.
+This uses Windows' supported notification area; it does not modify the taskbar
+or install a replacement shell.
 
 The **Phone companion** button enables opt-in, read-only Android sync over a
 private network: one-time QR pairing, certificate-pinned HTTPS, encrypted phone
@@ -152,7 +159,7 @@ schedule. They do not trigger account changes, spend credits, or redeem resets.
 
 ## Release status
 
-This is a functional **0.4.0 desktop + Android release candidate**, not a claim of completed
+This is a functional **0.5.0 desktop + Android release candidate**, not a claim of completed
 production validation. See [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) for the
 remaining public-release gates. A signing certificate and real account testing
 must be supplied by the product owner before public distribution.
