@@ -13,6 +13,8 @@
 - [x] Themed dropdowns: selection, keyboard controls, focus ring, outside/Escape dismissal, modal containment, viewport bounds.
 - [x] Packaged offline account persistence: cold restart, tray reopen, renderer reload, new window, missing and corrupt snapshot cache.
 - [x] Vault-first startup and stale IPC state/error ordering regression tests.
+- [x] MSIX-host to independent-profile migration, encrypted-file preservation,
+  failure/conflict handling and saved-account startup without live authentication.
 - [x] Desktop and narrow-layout visual review.
 - [x] Runtime dependency audit.
 - [x] Portable and NSIS packaging.

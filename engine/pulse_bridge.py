@@ -84,6 +84,12 @@ class SecureSwitcher(CodexAccountSwitcher):
             self.codex_home = codex_home
             self.auth_file = codex_home / "auth.json"
 
+    def _read_sequence(self):
+        roster = super()._read_sequence()
+        if not roster["accounts"] and any(self.credentials_dir.glob("account-*.json")):
+            raise ConfigError("Saved logins exist but their account list is missing or empty. Your encrypted logins have been preserved; do not add them again.")
+        return roster
+
     def current_account_number(self) -> str | None:
         try:
             return super().current_account_number()

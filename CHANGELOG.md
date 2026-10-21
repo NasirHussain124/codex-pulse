@@ -1,5 +1,18 @@
 # Changes
 
+## Windows 0.5.2 — 2026-10-21
+
+- Fixed the empty-account screen after closing ChatGPT and launching normally.
+  MSIX AppData redirection had split the hosted and standalone profiles.
+- One launch-independent profile at `%USERPROFILE%\.quota-management` with
+  verified, atomic recovery of the encrypted vault, settings, readings, history,
+  phone pairing and its Windows encryption state. Legacy originals stay intact.
+- Conflicting/corrupt profiles stop with a recovery message instead of being
+  overwritten; removing all accounts never restores an old legacy profile.
+- Missing account metadata alongside saved logins is a recoverable error, not
+  a new empty setup. Diagnostics identify their process to avoid stale checks.
+- Desktop-only patch; Android remains 0.5.0.
+
 ## Windows 0.5.1 — 2026-10-21
 
 - Redesigned account ledger: account identity, 5h, 7 days and clear details actions.

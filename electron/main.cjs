@@ -9,19 +9,35 @@ const { LoginManager, DEVICE_URL } = require('./login.cjs');
 const { loadLocalAccounts, validSnapshot } = require('./bootstrap.cjs');
 const { MobileBridge } = require('./mobile.cjs');
 const { copyPairingLink } = require('./pairing.cjs');
-const { APP_NAME, userDataPath } = require('./branding.cjs');
+const { APP_NAME } = require('./branding.cjs');
+const { profilePath, legacyProfiles, prepareProfile } = require('./profile.cjs');
 const { popoverBounds } = require('./popover.cjs');
 
 app.setAppUserModelId('com.codexpulse.desktop');
-app.setPath('userData', userDataPath(app.getPath('appData')));
 protocol.registerSchemesAsPrivileged([{ scheme: 'pulse', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
 const smoke = process.argv.includes('--smoke');
 const lifecycleId = process.argv.find(arg => arg.startsWith('--lifecycle-test='))?.split('=')[1];
 const lifecycle = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(lifecycleId || '');
+const recoveryTest = lifecycle && process.argv.includes('--recovery-test');
 // Hosted Windows runners may not have a hardware-backed graphics surface.
 // Only isolated QA profiles use software rendering; normal launches are unchanged.
 if ((smoke || lifecycle) && process.env.CI === 'true') app.disableHardwareAcceleration();
-if (smoke || lifecycle) app.setPath('userData', path.join(app.getPath('temp'), lifecycle ? `pulse-lifecycle-${lifecycleId}` : `pulse-smoke-${process.pid}`));
+const testRoot = lifecycle ? path.join(app.getPath('temp'), `pulse-lifecycle-${lifecycleId}`) : null;
+const profileDirectory = smoke || lifecycle
+  ? recoveryTest ? path.join(testRoot, 'independent') : lifecycle ? testRoot : path.join(app.getPath('temp'), `pulse-smoke-${process.pid}`)
+  : profilePath(app.getPath('home'));
+// Migrate before Electron initializes Local State: Windows safeStorage pairing
+// keys must move together with the encrypted phone vault, not after ready.
+try {
+  if (recoveryTest) prepareProfile({ destination: profileDirectory, sources: legacyProfiles({
+    appData: path.join(testRoot, 'Roaming'), localAppData: path.join(testRoot, 'Local') }) });
+  else if (!smoke && !lifecycle) prepareProfile({ destination: profileDirectory,
+    sources: legacyProfiles({ appData: app.getPath('appData'), localAppData: process.env.LOCALAPPDATA || path.join(app.getPath('home'), 'AppData', 'Local') }) });
+} catch (error) {
+  dialog.showErrorBox('Saved account recovery needs attention', `${error.message}\n\nYour original logins and phone pairing have not been deleted. Quota management will not open an empty replacement profile.`);
+  app.exit(1);
+}
+app.setPath('userData', profileDirectory);
 const demo = process.argv.includes('--demo') || smoke;
 const primaryInstance = app.requestSingleInstanceLock();
 if (!primaryInstance) app.quit();
@@ -30,13 +46,14 @@ let mobile;
 let quickWindow, quickReady = false, quickWanted = false, lastQuickBlur = 0;
 let snapshot = { schemaVersion: 1, generatedAt: null, accounts: [], engine: { name: 'ccswap', version: '0.39.2', secureStorage: 'Windows DPAPI' } };
 let engineError = null, history = [], events = [], initialized = false, revision = 0, startupSource = 'loading';
+const startedAt = new Date().toISOString();
 const thresholdNotices = new Set();
 
 function state() { return { snapshot, settings: store.settings, history, events, refreshing, engineError, login: login?.status || { phase: 'idle' }, initialized, revision, desktop: true, demo, version: app.getVersion() }; }
 function writeHealth(view = {}) {
   if (!store || demo) return;
   // Local counts only: no email, tokens, quota values, or analytics transport.
-  try { store.save('health', { ...store.load('health', {}), ...view, version: app.getVersion(),
+  try { store.save('health', { ...store.load('health', {}), ...view, version: app.getVersion(), processId: process.pid, startedAt,
     mainAccounts: snapshot.accounts.length, initialized, startupSource, revision,
     engineError: Boolean(engineError), updatedAt: new Date().toISOString() }); } catch { /* Diagnostics never block the app. */ }
 }

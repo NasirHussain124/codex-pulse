@@ -1,7 +1,7 @@
 {
   "name": "codex-pulse",
   "productName": "Quota management",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "A private desktop home for all your Codex accounts, powered by ccswap.",
   "author": "Codex Pulse contributors",
   "license": "MIT",

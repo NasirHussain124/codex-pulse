@@ -44,5 +44,13 @@ const timer = setTimeout(() => { child.kill(); process.exitCode = 1; console.err
   assert.equal(fs.readFileSync(path.join(home, 'auth.json'), 'utf8'), before);
   await assert.rejects(request('importLogin', { sessionId, expectedIdentity: 'wrong-account' }), /different account/);
   await assert.rejects(request('importLogin', { sessionId: '../../outside' }), /Invalid sign-in session/);
+  fs.unlinkSync(path.join(home, 'auth.json'));
+  assert.equal((await request('snapshot')).accounts.length, 2);
+  const sequenceFile = path.join(root, 'vault', 'codex', 'sequence.json');
+  const rosterBytes = fs.readFileSync(sequenceFile);
+  fs.unlinkSync(sequenceFile);
+  await assert.rejects(request('snapshot'), /preserved/);
+  fs.writeFileSync(sequenceFile, rosterBytes);
+  assert.equal((await request('snapshot')).accounts.length, 2);
   console.log('Packaged engine: multi-account vault, credential isolation, switching/removal, isolated login import and wrong-account reconnect rejection passed.');
 })().catch(error => { console.error(error.message); process.exitCode = 1; }).finally(() => { clearTimeout(timer); child.stdin.end(); child.kill(); });

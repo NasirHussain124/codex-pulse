@@ -1,5 +1,23 @@
 # Desktop verification — 2026-10-21
 
+## Windows 0.5.2
+
+- 62 Node tests passed. New coverage includes MSIX-host discovery, four-account
+  recovery over an empty standalone profile, exact encrypted-file preservation,
+  conflicting/corrupt profiles, no resurrection after removals, link/path
+  rejection, interrupted commits and source changes during staging.
+- 19 Python account-engine tests passed, including saved accounts and cached
+  measurements surviving disappearance of live authentication and an engine restart.
+- Rebuilt frozen engine passed the isolated multi-account integration test,
+  including missing-roster recovery errors without deleting encrypted logins.
+- 53 packaged desktop UI checks passed. The packaged lifecycle suite migrated
+  four synthetic accounts out of a simulated MSIX cache, with no live auth file,
+  then verified cold restart, tray reopen, renderer reload, new windows and
+  encrypted read-only mobile pairing/revocation. Missing/corrupt caches did not
+  produce the empty onboarding screen.
+- Production renderer build, Windows installer/portable packaging and runtime
+  dependency audit passed. No Android changes; signing/soak gates still apply.
+
 ## Windows 0.5.1
 
 - 50 Node tests passed, including exact independent ledger windows, genuine zero,

@@ -69,6 +69,39 @@ def test_corrupt_roster_is_not_treated_as_empty(tmp_path):
     assert switcher.sequence_file.read_text() == "corrupted"
 
 
+def test_missing_roster_with_saved_logins_is_not_treated_as_empty(tmp_path):
+    switcher = SecureSwitcher(tmp_path / "pulse", tmp_path / "codex")
+    switcher.credentials_dir.mkdir(parents=True)
+    saved = switcher._credential_path("1")
+    saved.write_text('{"pulseVault": 1, "data": "synthetic"}')
+    with pytest.raises(ConfigError, match="preserved"):
+        switcher._read_sequence()
+    assert saved.exists()
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows vault")
+def test_saved_accounts_survive_live_chatgpt_login_disappearing_and_restart(tmp_path, monkeypatch):
+    import claude_swap.codex as codex
+    home = tmp_path / "codex"
+    home.mkdir()
+    auth_file = home / "auth.json"
+    bridge = PulseBridge(tmp_path / "pulse", home)
+    for i in range(4):
+        auth_file.write_text(json.dumps(synthetic_auth(f"saved-{i}@example.test", "shared")))
+        bridge.dispatch("addCurrent", {})
+    monkeypatch.setattr(codex, "fetch_codex_usage", lambda *args, **kwargs: {"weekly": {"pct": 25}, "five_hour": {"pct": 10}})
+    assert len(bridge.snapshot(True)["accounts"]) == 4
+    auth_file.unlink()  # Closing/signing out of another app must not own this roster.
+    snapshot = bridge.snapshot(False)
+    assert len(snapshot["accounts"]) == 4
+    assert not any(a["selected"] for a in snapshot["accounts"])
+    restarted = PulseBridge(tmp_path / "pulse", home)
+    accounts = restarted.snapshot(False)["accounts"]
+    assert len(accounts) == 4
+    assert all(len(a["windows"]) == 2 for a in accounts)
+    assert not auth_file.exists()
+
+
 def test_snapshot_does_not_touch_codex_auth(tmp_path):
     home = tmp_path / "codex"
     home.mkdir()

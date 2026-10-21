@@ -46,6 +46,14 @@ project, not an official OpenAI app. See [MOBILE.md](MOBILE.md) for pairing and
 
 For a permanent installation, use the Setup executable. Portable builds extract
 to a temporary folder; never create a shortcut to that extracted executable.
+Starting with Windows 0.5.2, the account profile is stored at
+`%USERPROFILE%\.quota-management`, outside AppData redirection inherited from
+MSIX hosts such as ChatGPT. The first upgrade recovers the legacy `Codex Pulse`
+profile (including supported OpenAI host package caches) without deleting its
+originals. Accounts, settings, saved readings and phone pairing no longer depend
+on which application launched the monitor. Conflicting profiles require recovery
+instead of silently choosing or overwriting logins. Back up the independent
+profile for future recovery; do not copy or publish its private files to GitHub.
 Use **Settings → Quit Quota management** to exit completely. With close-to-tray enabled,
 the window's close button hides it. Left-click the Q tray icon for quick usage;
 double-click it or choose **Dashboard** to reopen the full app. Right-click for
