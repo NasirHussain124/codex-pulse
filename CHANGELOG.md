@@ -1,5 +1,19 @@
 # Changes
 
+## Android 0.4.1 — 2026-10-21
+
+- Compact multi-account widget with both 5-hour and 7-day limits side by side.
+  Short account names by default, optional emails, purple app-matched styling,
+  quiet progress bars, 4×2 requested grid and adaptive rows without an empty panel.
+- Existing widgets adopt both limits without losing selected accounts. Explicit
+  single-window modes remain available through widget configuration.
+- Full-screen QR camera with a subtle scan frame, close/flash controls, safe
+  permission/error states and a small pairing-link fallback. No pairing reset.
+- Thirty Android tests pass, including compact four-account layouts, unknown
+  quotas, overflow, larger fonts, legacy launchers, migration and scanner controls.
+- Android-only patch; the Windows app remains 0.4.0. Debug-signed release candidate,
+  not a Play Store or broad physical-device certification.
+
 ## 0.4.0 — 2026-10-21
 
 - Fixed pairing-link copy permission errors with a validated native clipboard action.

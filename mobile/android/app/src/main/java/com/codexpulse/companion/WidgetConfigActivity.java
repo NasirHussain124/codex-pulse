@@ -28,7 +28,9 @@ public final class WidgetConfigActivity extends Activity {
         TextView title = new TextView(this); title.setText(R.string.widget_title); title.setTextSize(26); root.addView(title);
         TextView help = new TextView(this); help.setText(R.string.widget_help); help.setPadding(0, pad / 2, 0, pad / 2); root.addView(help);
         var prefs = getSharedPreferences("widgets", MODE_PRIVATE); RadioGroup group = new RadioGroup(this);
-        RadioButton weekly = new RadioButton(this); weekly.setId(View.generateViewId()); weekly.setText(R.string.weekly_remaining); RadioButton five = new RadioButton(this); five.setId(View.generateViewId()); five.setText(R.string.five_hour_remaining); group.addView(weekly); group.addView(five); group.check(prefs.getInt("duration-" + id, 10080) == 300 ? five.getId() : weekly.getId()); root.addView(group);
+        RadioButton both = new RadioButton(this); both.setId(View.generateViewId()); both.setText(R.string.both_limits); group.addView(both);
+        RadioButton weekly = new RadioButton(this); weekly.setId(View.generateViewId()); weekly.setText(R.string.weekly_remaining); RadioButton five = new RadioButton(this); five.setId(View.generateViewId()); five.setText(R.string.five_hour_remaining); group.addView(weekly); group.addView(five); int duration = prefs.getInt("layout-version-" + id, 0) >= 2 ? prefs.getInt("duration-" + id, 0) : 0; group.check(duration == 300 ? five.getId() : duration == 10080 ? weekly.getId() : both.getId()); root.addView(group);
+        CheckBox emails = new CheckBox(this); emails.setText(R.string.widget_show_emails); emails.setChecked(prefs.getBoolean("emails-" + id, false)); root.addView(emails);
         Set<String> selected = new HashSet<>(prefs.getStringSet("accounts-" + id, java.util.Collections.emptySet()));
         try {
             JSONObject snapshot = new PhoneStore(this).read().optJSONObject("snapshot"); JSONArray accounts = snapshot == null ? null : snapshot.optJSONArray("accounts");
@@ -38,6 +40,6 @@ public final class WidgetConfigActivity extends Activity {
             }
         } catch (Exception ignored) { }
         Button save = new Button(this); save.setText(R.string.add_widget); root.addView(save);
-        save.setOnClickListener(v -> { prefs.edit().putInt("duration-" + id, group.getCheckedRadioButtonId() == five.getId() ? 300 : 10080).putStringSet("accounts-" + id, selected).apply(); PulseWidget.update(this, AppWidgetManager.getInstance(this), new int[]{id}); setResult(RESULT_OK, new Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id)); finish(); });
+        save.setOnClickListener(v -> { prefs.edit().putInt("duration-" + id, group.getCheckedRadioButtonId() == five.getId() ? 300 : group.getCheckedRadioButtonId() == weekly.getId() ? 10080 : 0).putInt("layout-version-" + id, 2).putBoolean("emails-" + id, emails.isChecked()).putStringSet("accounts-" + id, selected).apply(); PulseWidget.update(this, AppWidgetManager.getInstance(this), new int[]{id}); setResult(RESULT_OK, new Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id)); finish(); });
     }
 }

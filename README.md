@@ -3,15 +3,15 @@
 A Windows desktop account and usage manager built on **ccswap 0.39.2**. The
 dark ledger displays all saved Codex accounts together, with separate usage
 windows, remaining percentages, reset countdowns, and connection states.
-The ledger is the dashboard view. The floating and Android widgets use large,
-clean quota overviews with large percentages and quiet progress bars. Android
-widgets use Material You colors and adapt to portrait/landscape host sizes.
+The ledger is the dashboard view. The floating widget uses a clean quota overview.
+Android widgets match the app's purple styling and show both 5-hour and 7-day
+limits for multiple accounts in compact rows, adapting to host sizes and text scaling.
 
 Previously named Codex Pulse. Upgrades retain the original desktop data directory,
 Windows application ID, Android package and encryption aliases so saved accounts
 and phone pairings are preserved. Internal executable/protocol names remain stable.
 
-**0.4.0 release candidate:** Windows desktop + native Android usage viewer and
+**Windows 0.4.0 / Android 0.4.1 release candidate:** desktop + native Android usage viewer and
 home-screen widget. Local-first, Codex-only, no analytics. This is an independent
 project, not an official OpenAI app. See [MOBILE.md](MOBILE.md) for pairing and
 [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) for production-validation gates.

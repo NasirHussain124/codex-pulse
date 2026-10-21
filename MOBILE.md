@@ -1,4 +1,4 @@
-# Android companion — 0.4.0 release candidate
+# Android companion — 0.4.1 release candidate
 
 The companion only displays Codex quota. It cannot sign in to Codex, switch an
 account, change the vault, or close an application. No OpenAI tokens or passwords
@@ -18,8 +18,18 @@ are transferred to the phone. The desktop continues to use ccswap 0.39.2.
    With emails hidden, only names and quota are shared; internal identities and
    login credentials are never shared. Refresh the phone after changing this setting.
 6. Choose **Add home-screen widget**, or use your launcher's widget picker.
-   Configure the accounts and 5-hour/7-day window. Resize it to fit more rows;
-   extra accounts remain available in the app.
+   Both 5-hour and 7-day limits appear side by side by default, with short names
+   and a bar for each limit. Four accounts fit a compact 148dp-high layout at
+   normal font size. The requested default grid is 4×2; actual cell sizes depend
+   on your launcher. Resize an existing widget down once to reclaim home-screen
+   space. Larger accessibility text may require a taller widget.
+   Long-press to reconfigure chosen accounts, optional emails or a single quota
+   window. Leave all accounts unchecked to show everyone. Extra accounts remain
+   available in the app with a quiet overflow count on the widget.
+
+The scanner opens a full-screen camera with a centered frame, accessible close
+and flash controls, and a small **Use pairing link** fallback. Closing it returns
+to the app without changing an existing pairing.
 
 Keep Quota management running in the tray. After a full exit/restart, explicitly
 enable its private phone connection again. Device trust is retained, so a new

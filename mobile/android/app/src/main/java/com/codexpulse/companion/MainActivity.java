@@ -106,7 +106,7 @@ public final class MainActivity extends Activity {
             }));
             root.addView(button("Forget this PC", false, this::forget));
         }
-        root.addView(text("Private Wi-Fi sync · 0.4.0", 11, MUTED));
+        root.addView(text("Private Wi-Fi sync · 0.4.1", 11, MUTED));
         root.addView(button("Open-source notices", false, () -> {
             try (var input = getAssets().open("NOTICE.txt")) {
                 var output = new java.io.ByteArrayOutputStream(); byte[] bytes = new byte[2048]; int length;

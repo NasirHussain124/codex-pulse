@@ -53,7 +53,7 @@ public class MobileRegressionTest {
     }
     @Test public void scannerManualFallbackIsAvailableWithoutCameraPermission() {
         try (var activity = Robolectric.buildActivity(ScannerActivity.class).setup()) {
-            assertTrue(findText(activity.get().getWindow().getDecorView(), "Use a pairing link instead"));
+            assertTrue(findText(activity.get().getWindow().getDecorView(), "Use pairing link"));
         }
     }
     private boolean findText(View view, String text) {
@@ -66,7 +66,7 @@ public class MobileRegressionTest {
         var view = PulseWidget.createView(context, 57, fixture(), 280).apply(context, new android.widget.FrameLayout(context));
         assertEquals(4, ((LinearLayout)view.findViewById(R.id.widget_rows)).getChildCount());
         assertEquals(View.GONE, view.findViewById(R.id.widget_status).getVisibility());
-        assertEquals("person1@example.test", ((TextView)view.findViewById(R.id.row_name)).getText().toString());
+        assertEquals("person1", ((TextView)view.findViewById(R.id.row_name)).getText().toString());
         assertEquals(View.GONE, view.findViewById(R.id.row_reset).getVisibility());
         view.measure(View.MeasureSpec.makeMeasureSpec(300, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(280, View.MeasureSpec.EXACTLY));
         view.layout(0, 0, 300, 280);

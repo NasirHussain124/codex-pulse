@@ -2,6 +2,18 @@
 
 Version 0.4.0, Windows x64 + Android. ccswap 0.39.2 remains the account/quota engine.
 
+Android-only 0.4.1 update: APK assembly, all 30 Android tests and lint passed.
+Additional checks cover four dual-quota rows in a 148dp host, tall-host space
+utilization, pre-Android-12 layouts, large text, overflow, selected-account
+migration, optional emails/single-window modes and missing quota isolation.
+Scanner checks cover accessible close/flash controls, manual fallback,
+permission denial and centered portrait/landscape framing. The user confirmed
+the 0.4.0 scanner opens on their phone; the new 0.4.1 camera styling still requires
+their physical-device review. No Android pairing credentials or package ID changed.
+Native-rendered synthetic previews were also inspected at compact/tall widget
+sizes and for the full-screen camera overlay. All 42 desktop Node tests were
+rerun successfully; no desktop code changed in this Android patch.
+
 - 42 Node unit tests passed: forecast behavior, settings allowlist, official CLI
   sign-in orchestration, isolated profile configuration, one-time-code extraction,
   secret redaction, cancellation, timeout cleanup, reconnect identity, errors,

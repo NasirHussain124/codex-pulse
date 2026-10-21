@@ -1,5 +1,5 @@
 <resources>
-    <color name="widget_surface">#292633</color><color name="widget_text">#EEE8FA</color>
-    <color name="widget_muted">#B9B0C8</color><color name="widget_accent">#D0BDF4</color>
-    <color name="widget_track">#474052</color>
+    <color name="widget_surface">#302C3E</color><color name="widget_text">#EEE6FF</color>
+    <color name="widget_muted">#C0B5D2</color><color name="widget_accent">#CBB7EC</color>
+    <color name="widget_track">#4A4258</color>
 </resources>

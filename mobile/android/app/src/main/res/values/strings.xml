@@ -1,12 +1,29 @@
 <resources>
     <string name="app_name">Quota management</string>
-    <string name="widget_description">Your Codex usage at a glance</string>
+    <string name="widget_description">All your accounts, with 5-hour and 7-day limits together</string>
     <string name="widget_title">Your Codex widget</string>
-    <string name="widget_help">Choose a quota window and accounts. Resize the widget to show more accounts. Leave all unchecked to show every account.</string>
+    <string name="widget_help">Both limits, side by side. Choose accounts below, or leave all unchecked to show everyone. Resize the widget for more accounts or larger text.</string>
     <string name="weekly_remaining">7-day remaining</string>
     <string name="five_hour_remaining">5-hour remaining</string>
     <string name="add_widget">Add widget</string>
     <string name="refresh_usage">Refresh usage</string>
     <string name="refresh_icon" translatable="false">↻</string>
     <string name="pair_pc">Tap to connect</string>
+    <string name="codex_name" translatable="false">Codex</string>
+    <string name="five_hour_short">5h</string>
+    <string name="weekly_short">7d</string>
+    <string name="both_limits">Both 5-hour and 7-day</string>
+    <string name="widget_show_emails">Show emails instead of account names</string>
+    <string name="scan_title">Scan QR</string>
+    <string name="scan_close">Close camera</string>
+    <string name="scan_flash_on">Turn on flash</string>
+    <string name="scan_flash_off">Turn off flash</string>
+    <string name="scan_heading">Pair your PC</string>
+    <string name="scan_align">Align the QR from your PC inside the frame.</string>
+    <string name="scan_wrong_qr">Use the pairing QR shown on your PC.</string>
+    <string name="scan_manual">Use pairing link</string>
+    <string name="scan_unavailable">Camera unavailable. Use a pairing link instead.</string>
+    <string name="scan_allow">Allow Camera in settings, or use a pairing link.</string>
+    <string name="scan_denied">Camera access is off. Use a pairing link instead.</string>
+    <string name="scan_flash_unavailable">Flash unavailable. You can keep scanning.</string>
 </resources>
