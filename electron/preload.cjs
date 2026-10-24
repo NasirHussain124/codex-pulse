@@ -37,6 +37,13 @@ contextBridge.exposeInMainWorld('pulse', Object.freeze({
   createBackup: () => ipcRenderer.invoke('pulse:backup'),
   restoreBackup: () => ipcRenderer.invoke('pulse:restore'),
   diagnostics: () => ipcRenderer.invoke('pulse:diagnostics'),
+  connectProvider: input => ipcRenderer.invoke('pulse:provider-connect', input),
+  cancelProviderConnect: () => ipcRenderer.invoke('pulse:provider-cancel-connect'),
+  refreshProvider: id => ipcRenderer.invoke('pulse:provider-refresh', id),
+  enableProvider: (id, enabled) => ipcRenderer.invoke('pulse:provider-enabled', id, enabled),
+  renameProvider: (id, label) => ipcRenderer.invoke('pulse:provider-rename', id, label),
+  removeProvider: id => ipcRenderer.invoke('pulse:provider-remove', id),
+  providerDocs: (provider, setup) => ipcRenderer.invoke('pulse:provider-docs', provider, setup),
   onOpenAccount: handler => {
     const listener = (_event, identity) => { if (typeof identity === 'string' && /^[a-f0-9]{16}$/.test(identity)) handler(identity); };
     ipcRenderer.on('pulse:open-account', listener);

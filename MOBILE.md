@@ -1,6 +1,9 @@
-# Android companion — 0.5.0 release candidate
+# Android companion — 0.6.0 release candidate
 
-The companion only displays Codex quota. It cannot sign in to Codex, switch an
+The companion displays Codex quota and compact read-only reports for providers
+connected on the PC. Organization/project reports keep their own units and scope;
+they are not converted to Codex 5h/7d limits. Home-screen widgets remain focused
+on Codex accounts. The companion cannot sign in to Codex, switch an
 account, change the vault, or close an application. No OpenAI tokens or passwords
 are transferred to the phone. The desktop continues to use ccswap 0.39.2.
 
@@ -33,9 +36,14 @@ The scanner opens a full-screen camera with a centered frame, accessible close
 and flash controls, and a small **Use pairing link** fallback. Closing it returns
 to the app without changing an existing pairing.
 
-Keep Quota management running in the tray. After a full exit/restart, explicitly
-enable its private phone connection again. Device trust is retained, so a new
-QR is not required unless access was revoked or the certificate changed.
+Keep Quota management running in the tray. Enable automatic phone recovery and
+Windows sign-in startup if you want it to resume after a restart. Local discovery
+can find a changed private LAN address without replacing the original certificate
+pin/token. On public networks LAN auto-resume fails closed. Device trust is
+retained, so a new QR is not required unless access was revoked or the certificate
+changed. For remote access, explicitly enroll both devices in your own Tailscale
+network and select the verified Tailscale adapter in Phone companion. No public
+listener or hosted relay is created, and your PC must stay awake and connected.
 
 ## Freshness and disconnection
 
@@ -53,8 +61,9 @@ reaching zero never invents a fresh 100% quota reading.
 
 ## Security design
 
-- Listener: HTTPS/TLS 1.2+ bound to an explicitly selected RFC1918 IPv4 interface,
-  port 47831. It is disabled by default and on a full desktop restart.
+- Listener: HTTPS/TLS 1.2+ bound to an explicitly selected private IPv4 or verified
+  Tailscale interface, port 47831. Disabled by default; auto-resume/discovery
+  require explicit opt-in and a trusted network/adapter.
 - Trust: a per-installation self-signed certificate; the QR carries its exact
   SHA-256 leaf fingerprint. The phone verifies fingerprint and certificate
   validity and refuses redirects. No public CA installation or trust-all TLS

@@ -37,6 +37,18 @@ async function runSmoke({ app, window, createWindow, showQuickView, hideQuickVie
     report.viewport = { width: initial.width, height: initial.height };
     report.fourAccounts = initial.cards === 4;
     report.secureBridge = initial.bridge;
+    // Verify that the native SDK bundle can actually spawn from app.asar.unpacked,
+    // without a credential, login, session or model request.
+    {
+      const os = require('node:os');
+      const { CopilotClient, RuntimeConnection } = require('@github/copilot-sdk');
+      const copilot = require('./providers/copilot.cjs');
+      const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'quota-packaged-runtime-'));
+      const client = new CopilotClient({ connection: copilot.connection(RuntimeConnection), mode: 'empty', useLoggedInUser: false, workingDirectory: directory, baseDirectory: directory, logLevel: 'none', env: copilot.runtimeEnvironment(directory) });
+      const timer = setTimeout(() => void client.forceStop(), 20000);
+      try { await client.start(); const pong = await client.ping('quota-package-health'); report.bundledProviderRuntime = pong.message.includes('quota-package-health'); }
+      finally { clearTimeout(timer); await client.stop().catch(() => client.forceStop()); try { fs.rmSync(directory, { recursive: true, force: true }); } catch {} }
+    }
     report.nativeClipboardBridge = await js(`typeof window.pulse.mobileCopyPair === 'function' && typeof window.pulse.copyLoginCode === 'function'`);
     report.allFourVisible = initial.visible;
     report.providerMarks = await js(`document.querySelectorAll('img.provider-mark').length >= 2 && [...document.querySelectorAll('img.provider-mark')].every(img => img.complete && img.naturalWidth > 0 && img.src.startsWith('pulse://app/providers/'))`);
@@ -223,6 +235,29 @@ async function runSmoke({ app, window, createWindow, showQuickView, hideQuickVie
     await pause();
     report.narrowPanel = await js(`document.querySelector('.account-drawer').getBoundingClientRect().right <= innerWidth + 1 && document.querySelector('.account-drawer').scrollWidth <= innerWidth + 1`);
     await js(`document.querySelector('button[aria-label="Close account panel"]').click()`);
+    // Multi-provider capabilities are opt-in samples, not decorative connected
+    // accounts. Opening them must leave Codex history/recommendations intact.
+    await js(`document.querySelector('.connect-provider-nav').click()`); await pause();
+    report.providerConnectChoices = await js(`document.querySelectorAll('.provider-options button').length === 4 && Boolean(document.querySelector('.provider-connect input[type="password"]:disabled')) && document.querySelector('[role="dialog"]').innerText.includes('Sample mode is read-only')`);
+    await js(`document.querySelectorAll('.provider-options button')[3].click()`); await pause();
+    report.providerGeminiScope = await js(`Boolean(document.querySelector('.provider-connect textarea:disabled')) && document.querySelector('.provider-capability').innerText.includes('not Gemini CLI')`);
+    await js(`document.querySelector('button[aria-label="Close dialog"]').click()`); await pause();
+    await js(`document.querySelector('.sample-provider-reports').click()`); await pause();
+    report.providerSampleCards = await js(`document.querySelectorAll('.provider-connection-card').length === 4 && document.querySelectorAll('.connected-provider-tab').length === 4 && document.documentElement.scrollWidth <= innerWidth + 1`);
+    await js(`document.querySelector('.provider-connection-card').click()`); await pause();
+    report.providerNativeQuota = await js(`document.querySelector('.provider-drawer').innerText.includes('72% left') && document.querySelector('.provider-drawer').innerText.includes('Sample report') && document.querySelector('main').inert && document.querySelectorAll('[data-chart-series]').length === 4`);
+    await setSelect('Provider connection in panel', '00000000-0000-4000-8000-000000000002');
+    report.providerClaudeUsageOnly = await js(`!document.querySelector('.provider-drawer .provider-quota') && document.querySelectorAll('.provider-metrics>div').length === 3 && document.querySelector('.provider-drawer').innerText.includes('not Claude.ai') && [...document.querySelectorAll('.provider-drawer button')].filter(button => /Rename|Remove|Reconnect|Pause/.test(button.textContent)).every(button => button.disabled)`);
+    await setSelect('Provider connection in panel', '00000000-0000-4000-8000-000000000003');
+    report.providerCursorMembers = await js(`Boolean(document.querySelector('.provider-members')) && !document.querySelector('.provider-drawer .provider-quota')`);
+    await setSelect('Provider connection in panel', '00000000-0000-4000-8000-000000000004');
+    report.providerGeminiUnknown = await js(`!document.querySelector('.provider-drawer .provider-quota') && document.querySelector('.provider-drawer').innerText.includes('not guessed') && document.querySelector('.provider-drawer').scrollWidth <= innerWidth + 1`);
+    await capture(window, 'quota-management-provider-mobile-width.png');
+    await js(`document.querySelector('button[aria-label="Close provider panel"]').click()`); await pause();
+    window.setSize(1500, 1000); await pause(200);
+    await js(`document.querySelectorAll('.provider-connection-card')[0].click()`); await pause();
+    await capture(window, 'quota-management-provider-report.png');
+    await js(`document.querySelector('button[aria-label="Close provider panel"]').click()`);
     fs.writeFileSync(path.join(output, 'codex-pulse-smoke.json'), JSON.stringify(report, null, 2));
     return Object.values(report).every(Boolean);
   } catch (error) {

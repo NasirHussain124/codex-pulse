@@ -30,6 +30,11 @@ function createBackup(root, keyBundle, version) {
   const key = keyBytes(keyBundle.key);
   if (typeof keyBundle.wrappedKey !== 'string' || keyBundle.wrappedKey.length > 4096) throw new Error('Invalid Windows backup key.');
   const profile = inspectProfile(root);
+  if (profile && ['mobile-vault.json', 'providers-vault.json'].some(name => profile.copy.has(name))) {
+    let localState;
+    try { localState = JSON.parse(profile.copy.get('Local State')?.toString('utf8') || 'null'); } catch {}
+    if (typeof localState?.os_crypt?.encrypted_key !== 'string' || !localState.os_crypt.encrypted_key) throw new Error('Windows has not saved its encryption key yet. Quit and reopen Quota management, then create the backup. Nothing was exported.');
+  }
   const files = Object.fromEntries([...(profile?.copy || [])].map(([name, bytes]) => [name, bytes.toString('base64')]));
   const plain = JSON.stringify({ schema: 1, files });
   if (Buffer.byteLength(plain) > MAX) throw new Error('This profile is too large for a single safe backup. Export usage history separately.');

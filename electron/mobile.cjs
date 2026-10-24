@@ -3,6 +3,7 @@ const os = require('node:os');
 const { randomBytes, randomUUID, createHash, timingSafeEqual, X509Certificate } = require('node:crypto');
 const { lanAddress, networkEntries } = require('./network.cjs');
 const { announce } = require('./discovery.cjs');
+const { report: providerReport } = require('./providers/public.cjs');
 const digest = value => createHash('sha256').update(value).digest('hex');
 const privateAddress = lanAddress;
 function addresses() {
@@ -18,7 +19,16 @@ function publicSnapshot(state) {
         id: window.id, label: window.label, durationMinutes: window.durationMinutes,
         remainingPercent: window.remainingPercent, resetsAt: window.resetsAt,
       })),
-    })) };
+    })), providers: (state.providers?.connections || []).slice(0, 20).flatMap(connection => {
+      const value = providerReport(connection.report, connection.provider, state.settings.privacy !== false);
+      if (!value) return [];
+      // A compact second allowlist: no credentials, member directory, internal
+      // identity keys, endpoints, errors or desktop management actions go over TLS.
+      return [{ id: connection.id, provider: connection.provider, label: connection.label,
+        status: connection.status, fetchedAt: connection.fetchedAt,
+        report: { scope: value.scope, subject: value.subject, complete: value.complete, periodStart: value.periodStart,
+          periodEnd: value.periodEnd, quotas: value.quotas.slice(0, 12), metrics: value.metrics.slice(0, 6), notes: value.notes.slice(0, 2) } }];
+    }) };
 }
 class MobileBridge {
   constructor({ readSecret, writeSecret, getState, port = 47831, allowLoopback = false, clock = Date.now, networks = networkEntries, discoverable = () => false, advertise = announce }) {

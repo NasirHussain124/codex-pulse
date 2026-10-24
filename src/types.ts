@@ -18,7 +18,19 @@ export interface Settings {
 export interface HistorySample { at: string; accounts: { identity: string; fetchedAt: string; windows: QuotaWindow[] }[] }
 export interface PulseEvent { id: string; kind: string; title: string; at: string }
 export interface LoginStatus { phase: 'idle' | 'starting' | 'waiting' | 'saving' | 'success' | 'error'; mode?: 'browser' | 'device'; message?: string; code?: string }
-export interface AppState { snapshot: Snapshot; settings: Settings; history: HistorySample[]; events: PulseEvent[]; refreshing: boolean; engineError: string | null; login?: LoginStatus; desktop: boolean; demo: boolean; version: string; initialized?: boolean; revision?: number }
+export interface AppState { snapshot: Snapshot; settings: Settings; history: HistorySample[]; events: PulseEvent[]; refreshing: boolean; engineError: string | null; login?: LoginStatus; desktop: boolean; demo: boolean; version: string; initialized?: boolean; revision?: number; providers?: OtherProviders }
+export type OtherProvider = 'copilot' | 'claude' | 'cursor' | 'gemini';
+export interface ProviderMetric { id: string; label: string; value: string | number | null; unit: 'USD' | 'tokens' | 'requests' | 'members' | 'count' | 'text' }
+export interface ProviderQuota { id: string; label: string; period: string; unit: string; used: number | null; limit: number | null;
+  unlimited: boolean; remainingPercent: number | null; resetsAt: string | null; observedAt: string | null; overage?: number | null; overageAllowed?: boolean }
+export interface ProviderReport { subject: string; scope: 'account' | 'organization' | 'team' | 'project'; periodStart: string | null; periodEnd: string | null;
+  complete: boolean; source: string; quotas: ProviderQuota[]; metrics: ProviderMetric[]; notes: string[];
+  members: { id: string; label: string; email?: string; quotas: ProviderQuota[]; metrics: ProviderMetric[] }[] }
+export interface ProviderConnection { id: string; provider: OtherProvider; label: string; createdAt: string | null; enabled: boolean;
+  status: 'ready' | 'stale' | 'paused' | 'error' | 'unavailable'; refreshing: boolean; fetchedAt: string | null; nextUpdateAt: string | null;
+  error: string | null; report: ProviderReport | null; source: string }
+export interface OtherProviders { connections: ProviderConnection[]; error: string | null }
+export interface ProviderInput { id?: string; provider: OtherProvider; label: string; secret: string; projectId?: string }
 export interface CurrentLogin { available: boolean; email?: string; mode?: string; plan?: string; message?: string }
 export interface ResetReview { available: number | null; detailsKnown: boolean; readAt: string; pendingCreditId?: string;
   credits: { id: string; title: string; expiresAt: string | null }[];
@@ -47,6 +59,10 @@ export interface PulseAPI {
   resetConsume?(id: string, creditId: string): Promise<{ canceled: boolean; outcome?: 'reset' | 'alreadyRedeemed' | 'nothingToReset' | 'noCredit'; review?: ResetReview }>;
   createBackup?(): Promise<boolean>; restoreBackup?(): Promise<boolean>; diagnostics?(): Promise<Diagnostics>;
   onOpenAccount?(handler: (identity: string) => void): () => void;
+  connectProvider?(input: ProviderInput): Promise<{ connectionId: string; providers: OtherProviders }>;
+  cancelProviderConnect?(): Promise<void>; refreshProvider?(id: string): Promise<OtherProviders>;
+  enableProvider?(id: string, enabled: boolean): Promise<OtherProviders>; renameProvider?(id: string, label: string): Promise<OtherProviders>;
+  removeProvider?(id: string): Promise<OtherProviders>; providerDocs?(provider: OtherProvider, setup?: boolean): Promise<unknown>;
   mobileCopyPair?(text: string): Promise<boolean>; mobileDownload?(): Promise<unknown>;
   mobilePair?(): Promise<{ text: string; qr: string; expiresAt: number }>; mobileCancelPair?(): Promise<void>; mobileRevoke?(id: string): Promise<MobileStatus>;
 }

@@ -12,8 +12,12 @@ try {
     if ($LASTEXITCODE) { throw 'Node dependency installation failed.' }
     npm test
     if ($LASTEXITCODE) { throw 'Desktop unit tests failed.' }
-    & .venv314\Scripts\python.exe -m pytest -q engine\test_bridge.py
+    & .venv314\Scripts\python.exe -m pytest -q engine
     if ($LASTEXITCODE) { throw 'Account engine tests failed.' }
+    node tests\copilot-runtime.cjs
+    if ($LASTEXITCODE) { throw 'Bundled Copilot runtime health check failed.' }
+    node tests\backup-restart.cjs
+    if ($LASTEXITCODE) { throw 'Encrypted backup cold-restart test failed.' }
     & .venv314\Scripts\python.exe -m PyInstaller --noconfirm --clean --onefile --name pulse-engine --copy-metadata ccswap --collect-all truststore --distpath engine-dist --workpath engine-build engine\pulse_bridge.py
     if ($LASTEXITCODE) { throw 'Engine packaging failed.' }
     node tests\packaged-engine.cjs

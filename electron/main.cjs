@@ -16,6 +16,8 @@ const { popoverBounds } = require('./popover.cjs');
 const { MobileRecovery, networkEntries } = require('./network.cjs');
 const { createBackup, readBackup, stageRestore, applyRestore, backupEnvelope } = require('./backup.cjs');
 const { actionableAlerts } = require('./alerts.cjs');
+const { ProviderManager } = require('./providers/manager.cjs');
+const { SOURCES: PROVIDER_SOURCES } = require('./providers/public.cjs');
 
 app.setAppUserModelId('com.codexpulse.desktop');
 protocol.registerSchemesAsPrivileged([{ scheme: 'pulse', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
@@ -34,7 +36,14 @@ const profileDirectory = smoke || lifecycle
 // keys must move together with the encrypted phone vault, not after ready.
 try {
   const restoreId = process.argv.find(arg => arg.startsWith('--apply-quota-restore='))?.split('=')[1];
-  if (restoreId && !smoke && !lifecycle) applyRestore(profileDirectory, restoreId);
+  if (restoreId && !smoke && !lifecycle) {
+    // Windows holds an open directory handle after single-instance locking.
+    // Restore must precede our own lock and Local State initialization. An
+    // already-running Windows copy holds the same handle, so rename fails
+    // before any profile is replaced. Do not port this assumption to POSIX.
+    if (process.platform !== 'win32') throw new Error('Profile restore is currently supported only on Windows.');
+    applyRestore(profileDirectory, restoreId);
+  }
   if (recoveryTest) prepareProfile({ destination: profileDirectory, sources: legacyProfiles({
     appData: path.join(testRoot, 'Roaming'), localAppData: path.join(testRoot, 'Local') }) });
   else if (!smoke && !lifecycle) prepareProfile({ destination: profileDirectory,
@@ -48,14 +57,14 @@ const demo = process.argv.includes('--demo') || smoke;
 const primaryInstance = app.requestSingleInstanceLock();
 if (!primaryInstance) app.quit();
 let mainWindow, widgetWindow, tray, engine, store, login, pollTimer, refreshing = false, quitting = false;
-let mobile, mobileRecovery;
+let mobile, mobileRecovery, providerMonitor;
 let quickWindow, quickReady = false, quickWanted = false, lastQuickBlur = 0;
 let snapshot = { schemaVersion: 1, generatedAt: null, accounts: [], engine: { name: 'ccswap', version: '0.39.2', secureStorage: 'Windows DPAPI' } };
 let engineError = null, history = [], events = [], initialized = false, revision = 0, startupSource = 'loading';
 const startedAt = new Date().toISOString();
 const thresholdNotices = new Set();
 
-function state() { return { snapshot, settings: store.settings, history, events, refreshing, engineError, login: login?.status || { phase: 'idle' }, initialized, revision, desktop: true, demo, version: app.getVersion() }; }
+function state() { return { snapshot, settings: store.settings, history, events, refreshing, engineError, login: login?.status || { phase: 'idle' }, initialized, revision, desktop: true, demo, version: app.getVersion(), providers: providerMonitor?.public(store.settings.privacy) || { connections: [], error: null } }; }
 function writeHealth(view = {}) {
   if (!store || demo) return;
   // Local counts only: no email, tokens, quota values, or analytics transport.
@@ -233,7 +242,7 @@ async function operation(method, params = {}) {
 }
 
 app.on('second-instance', showDashboard);
-app.on('before-quit', () => { quitting = true; clearInterval(pollTimer); mobileRecovery?.stop(); login?.stop(); engine?.stop(); void mobile?.stop(); });
+app.on('before-quit', () => { quitting = true; clearInterval(pollTimer); providerMonitor?.stop(); mobileRecovery?.stop(); login?.stop(); engine?.stop(); void mobile?.stop(); });
 app.on('window-all-closed', () => { if (!tray) app.quit(); });
 app.whenReady().then(async () => {
   if (!primaryInstance) return;
@@ -273,6 +282,47 @@ app.whenReady().then(async () => {
     return mobile;
   };
   mobileRecovery = new MobileRecovery({ getSettings: () => store.settings, bridge: getMobile, changed: publish });
+  if (!demo && !lifecycle) providerMonitor = new ProviderManager({
+    readVault: () => {
+      const value = store.load('providers-vault', null);
+      if (!value) { if (fs.existsSync(path.join(profileDirectory, 'providers-vault.json'))) throw new Error('The encrypted provider vault is unreadable.'); return null; }
+      if (!safeStorage.isEncryptionAvailable()) throw new Error('Windows encryption is unavailable.');
+      return JSON.parse(safeStorage.decryptString(Buffer.from(value, 'base64')));
+    },
+    writeVault: value => {
+      if (!safeStorage.isEncryptionAvailable()) throw new Error('Windows encryption is unavailable. Your credential was not saved.');
+      store.save('providers-vault', safeStorage.encryptString(JSON.stringify(value)).toString('base64'));
+    },
+    readReports: () => store.load('provider-reports', null), writeReports: value => store.save('provider-reports', value), changed: publish,
+  });
+  const providers = () => {
+    if (!providerMonitor || demo || lifecycle) throw new Error('Connect providers in your real Windows workspace, not sample mode.');
+    return providerMonitor;
+  };
+  handle('pulse:provider-connect', async input => {
+    if (!safeStorage.isEncryptionAvailable()) throw new Error('Windows encryption is unavailable. No credential was saved.');
+    const result = await providers().connect(input);
+    event('provider', 'Connected an authorized provider reporting source'); publish();
+    return { connectionId: result.connectionId, providers: providers().public(store.settings.privacy) };
+  });
+  handle('pulse:provider-cancel-connect', () => providerMonitor?.cancelConnect());
+  handle('pulse:provider-refresh', async value => { await providers().refresh(value, true); return providers().public(store.settings.privacy); });
+  handle('pulse:provider-enabled', (value, enabled) => { providers().setEnabled(value, enabled); return providers().public(store.settings.privacy); });
+  handle('pulse:provider-rename', (value, label) => { providers().rename(value, label); return providers().public(store.settings.privacy); });
+  handle('pulse:provider-remove', async value => {
+    const monitor = providers(), connection = monitor.public().connections.find(row => row.id === value);
+    if (!connection) throw new Error('Unknown provider connection.');
+    const answer = await dialog.showMessageBox(mainWindow, { type: 'question', title: 'Remove reporting connection?',
+      message: `Remove ${connection.label}?`, detail: 'This removes its encrypted reporting credential and local report from Quota management. It does not log you out, revoke the provider key, modify billing, or change a running session.',
+      buttons: ['Cancel', 'Remove connection'], defaultId: 0, cancelId: 0, noLink: true });
+    if (answer.response === 1) { monitor.remove(value); event('provider', 'Removed a local provider reporting connection'); publish(); }
+    return monitor.public(store.settings.privacy);
+  });
+  handle('pulse:provider-docs', (kind, setup = false) => {
+    if (!Object.hasOwn(PROVIDER_SOURCES, kind) || typeof setup !== 'boolean') throw new Error('Choose a supported provider.');
+    const links = { copilot: 'https://docs.github.com/en/copilot/how-tos/copilot-sdk/auth/authenticate', claude: 'https://platform.claude.com/docs/en/manage-claude/usage-cost-api', cursor: 'https://cursor.com/docs/account/teams/admin-api', gemini: 'https://docs.cloud.google.com/monitoring/access-control' };
+    return shell.openExternal(setup ? links[kind] : PROVIDER_SOURCES[kind]);
+  });
   handle('pulse:mobile-status', () => ({ ...getMobile().status(), autoResume: store.settings.mobileResume,
     discovery: store.settings.mobileDiscovery, recovery: mobileRecovery.message }));
   handle('pulse:mobile-start', async (address) => {
@@ -454,6 +504,7 @@ app.whenReady().then(async () => {
   mainWindow = createWindow();
   if (!lifecycle) { powerMonitor.on('resume', () => { refresh(); if (!demo) void mobileRecovery.tick(); }); schedule(); }
   if (!demo && !lifecycle) void mobileRecovery.start();
+  if (!demo && !lifecycle) void providerMonitor.start();
   if (!demo && !lifecycle) refresh();
   if (lifecycle) {
     mainWindow.webContents.once('did-finish-load', async () => {

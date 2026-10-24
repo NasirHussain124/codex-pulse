@@ -42,6 +42,16 @@ these marks identify integrations and imply no affiliation or endorsement.
 Quota management's Q / dual-window meter is original application artwork,
 not a provider mark.
 
+## Reporting integrations
+
+GitHub Copilot SDK 1.0.26 and its matching official platform runtime 1.0.103
+are distributed under their upstream MIT notices, retained in the packaged
+dependency directories. Source: https://github.com/github/copilot-sdk .
+Google Auth Library 11.3.1 retains its Apache-2.0 license and dependency notices.
+Source: https://github.com/googleapis/google-auth-library-nodejs .
+The application uses authenticated reporting operations only; it does not
+create AI sessions, execute provider tools, enable overage or alter billing.
+
 Android uses ZXing Android Embedded / ZXing core and AndroidX support libraries
 under Apache-2.0. Its packaged NOTICE.txt lists upstream sources and attribution;
 the app exposes it through Open-source notices. Test-only Robolectric/JUnit are

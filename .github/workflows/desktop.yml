@@ -24,7 +24,9 @@ jobs:
       - run: uv venv --python 3.14.5 .venv314
       - run: uv pip install --python .venv314/Scripts/python.exe -r engine/requirements.lock.txt
       - run: npm test
-      - run: .venv314/Scripts/python.exe -m pytest -q engine/test_bridge.py
+      - run: .venv314/Scripts/python.exe -m pytest -q engine
+      - run: node tests/copilot-runtime.cjs
+      - run: node tests/backup-restart.cjs
       - run: .venv314/Scripts/python.exe -m PyInstaller --noconfirm --onefile --name pulse-engine --copy-metadata ccswap --collect-all truststore --distpath engine-dist --workpath engine-build engine/pulse_bridge.py
       - run: node tests/packaged-engine.cjs
       - run: npm audit

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Activity, ArrowDownToLine, ArrowRight, Check, ChevronDown, ChevronUp, Code2, Ellipsis, Eye, EyeOff, Monitor, Plus, RefreshCw, Search, Settings2, ShieldCheck, Smartphone, X } from 'lucide-react';
-import type { Account, AppState, Settings } from './types';
+import type { Account, AppState, Settings, OtherProvider, OtherProviders, ProviderConnection } from './types';
 import { api } from './api';
 import { ledgerQuota } from './ledgerModel';
 import { AccountSignIn } from './AccountSignIn';
@@ -17,8 +17,10 @@ import { age, countdown, email, label, lowest } from './model';
 import { ForecastChart } from './ForecastChart';
 import { RecommendationPanel } from './RecommendationPanel';
 import { RecoveryTools } from './RecoveryTools';
+import { ProviderConnect, ProviderConnections, ProviderDrawer, providerNames } from './ProviderConnections';
+import { providerDemo } from './providerDemo';
 
-type DialogState = { kind: 'add'; account?: Account } | { kind: 'import' | 'settings' | 'widgets' | 'mobile' } | { kind: 'switch' | 'remove'; account: Account } | null;
+type DialogState = { kind: 'add'; account?: Account } | { kind: 'provider'; connection?: ProviderConnection; provider?: OtherProvider } | { kind: 'import' | 'settings' | 'widgets' | 'mobile' } | { kind: 'switch' | 'remove'; account: Account } | null;
 const isWidget = new URLSearchParams(location.search).has('widget');
 const isQuick = new URLSearchParams(location.search).has('quick');
 const timeLabel = (value: string | null) => value ? new Date(value).toLocaleString('en', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }) : 'Reset not reported';
@@ -28,7 +30,7 @@ function Dialog({ title, children, close, busy }: { title: string; children: Rea
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const prior = document.activeElement as HTMLElement;
-    const elements = () => Array.from(ref.current?.querySelectorAll<HTMLElement>('button:not(:disabled),input,select') || []);
+    const elements = () => Array.from(ref.current?.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled),textarea:not(:disabled),select:not(:disabled),a[href]') || []);
     elements()[0]?.focus();
     const key = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && !busy) close();
@@ -65,14 +67,20 @@ export default function LedgerApp() {
   const [busy, setBusy] = useState(false); const [notice, setNotice] = useState('');
   const [menu, setMenu] = useState<string | null>(null);
   const [panelIdentity, setPanelIdentity] = useState<string | null>(null);
+  const [providerPanelId, setProviderPanelId] = useState<string | null>(null);
+  const [showProviderSamples, setShowProviderSamples] = useState(false);
+  const sampleProviders = useMemo(() => providerDemo(previewSettings.privacy), [previewSettings.privacy]);
+  const closeProviderPanel = useCallback(() => setProviderPanelId(null), []);
   const [chartIdentity, setChartIdentity] = useState('');
   const closePanel = useCallback(() => setPanelIdentity(null), []);
-  useEffect(() => api.onOpenAccount?.(identity => { setDialog(null); setPanelIdentity(identity); }), []);
-  const openPanel = (account: Account) => { setPanelIdentity(account.identity); setMenu(null); };
+  useEffect(() => api.onOpenAccount?.(identity => { setDialog(null); setProviderPanelId(null); setPanelIdentity(identity); }), []);
+  const openPanel = (account: Account) => { setProviderPanelId(null); setPanelIdentity(account.identity); setMenu(null); };
+  const openProvider = (id: string) => { setPanelIdentity(null); setProviderPanelId(id); setMenu(null); };
+  const addProvider = (provider?: OtherProvider) => { setProviderPanelId(null); setPanelIdentity(null); setDialog({ kind: 'provider', provider }); };
   const panelDialog = (kind: 'switch' | 'add' | 'remove', account: Account) => { setPanelIdentity(null); setDialog({ kind, account }); };
   const [, tick] = useState(0);
   const searchRef = useRef<HTMLInputElement>(null);
-  const state = preview ? { ...demo, settings: previewSettings } : live;
+  const state = preview ? { ...demo, settings: previewSettings, providers: showProviderSamples ? sampleProviders : undefined } : live;
   const close = useCallback(() => {
     if (live?.login?.phase === 'saving') return;
     if (['waiting', 'starting'].includes(live?.login?.phase || '')) void api.cancelLogin().catch(() => {});
@@ -118,6 +126,9 @@ export default function LedgerApp() {
   const visible = accounts.filter(account => `${label(account, state.settings)} ${account.email} ${account.plan}`.toLowerCase().includes(search.toLowerCase())).sort((a, b) => sort === 'remaining' ? (lowest(b) ?? -1) - (lowest(a) ?? -1) : sort === 'name' ? label(a, state.settings).localeCompare(label(b, state.settings)) : Number(b.selected) - Number(a.selected) || Number(a.id) - Number(b.id));
   const ready = accounts.filter(a => a.status === 'ready' && (lowest(a) ?? 0) > 0).length;
   const panelAccount = accounts.find(account => account.identity === panelIdentity);
+  const providerPanel = state.providers?.connections.find(row => row.id === providerPanelId);
+  const overlayOpen = Boolean(panelAccount || providerPanel);
+  const updateProviders = (providers: OtherProviders) => setLive(previous => previous ? { ...previous, providers } : previous);
   const renameAccount = async (name: string) => {
     if (!panelAccount) return;
     await update({ accounts: { ...state.settings.accounts, [panelAccount.identity]: { ...state.settings.accounts[panelAccount.identity], label: name, pinned: state.settings.accounts[panelAccount.identity]?.pinned ?? false } } });
@@ -128,11 +139,11 @@ export default function LedgerApp() {
   if (isQuick) return <div className="ledger-app quick-mode"><QuickView state={state} preview={preview} busy={busy} refresh={() => void refresh()} close={() => void api.closeQuickView()} pin={() => void api.openWidget()} dashboard={() => void api.openDashboard()} /></div>;
 
   return <div className={`ledger-app ${isWidget ? 'widget-mode' : 'dashboard-v2'} ${state.settings.compact ? 'compact-density' : ''}`}>
-    {isWidget ? <div inert={Boolean(panelAccount)}><QuotaWidget state={state} preview={preview} busy={busy} open={openPanel} settings={changeSettings} refresh={() => void refresh()} add={() => setDialog({ kind: 'add' })} configure={() => setDialog({ kind: 'settings' })} privacy={() => changeSettings({ privacy: !state.settings.privacy })} dashboard={() => void api.openDashboard()} /></div> : <>
-    <header className="app-topbar" inert={Boolean(panelAccount)}><div className="app-brand"><QuotaMark size={29} /><strong>Quota management</strong></div><div className="app-top-actions"><button onClick={() => void api.openQuickView()}><Activity size={15} /> Quick view</button><button onClick={() => setDialog({ kind: 'widgets' })}><Monitor size={15} /> Desktop widget</button><button onClick={() => void act(() => api.openUsage(), undefined, false)}>Official usage <ArrowRight size={14} /></button><span className="top-separator" /><button className="icon-btn" aria-label="Settings" onClick={() => setDialog({ kind: 'settings' })}><Settings2 size={17} /></button></div></header>
-    <main className="monitor-content" inert={Boolean(panelAccount)}>
+    {isWidget ? <div inert={overlayOpen}><QuotaWidget state={state} preview={preview} busy={busy} open={openPanel} settings={changeSettings} refresh={() => void refresh()} add={() => setDialog({ kind: 'add' })} configure={() => setDialog({ kind: 'settings' })} privacy={() => changeSettings({ privacy: !state.settings.privacy })} dashboard={() => void api.openDashboard()} /></div> : <>
+    <header className="app-topbar" inert={overlayOpen}><div className="app-brand"><QuotaMark size={29} /><strong>Quota management</strong></div><div className="app-top-actions"><button onClick={() => void api.openQuickView()}><Activity size={15} /> Quick view</button><button onClick={() => setDialog({ kind: 'widgets' })}><Monitor size={15} /> Desktop widget</button><button onClick={() => void act(() => api.openUsage(), undefined, false)}>Official usage <ArrowRight size={14} /></button><span className="top-separator" /><button className="icon-btn" aria-label="Settings" onClick={() => setDialog({ kind: 'settings' })}><Settings2 size={17} /></button></div></header>
+    <main className="monitor-content" inert={overlayOpen}>
       {<div className="companion-shortcut"><button onClick={() => setDialog({ kind: 'mobile' })}><Smartphone size={14} /> Phone companion <span>NEW</span></button></div>}
-      {<><div className="page-heading"><div><h1>Quota management</h1><p><i /><span>{accounts.length} account{accounts.length === 1 ? '' : 's'}</span><b>·</b><span className="connected-count">{ready} available</span></p></div><div className="page-actions"><button className="email-toggle" aria-label={state.settings.privacy ? 'Show email addresses' : 'Hide email addresses'} onClick={() => changeSettings({ privacy: !state.settings.privacy })}>{state.settings.privacy ? <Eye size={15} /> : <EyeOff size={15} />}{state.settings.privacy ? 'Show emails' : 'Hide emails'}</button><button className="add-control header-add" onClick={() => setDialog({ kind: 'add' })}><Plus size={15} /> Add account</button><button className="refresh-all" disabled={state.refreshing || busy} onClick={() => void refresh()}><RefreshCw size={16} className={state.refreshing ? 'spin' : ''} />{state.refreshing ? 'Refreshing accounts…' : 'Refresh all accounts'}</button></div></div><nav className="provider-navigation" aria-label="Codex accounts"><button className="provider-tab" aria-current="page" aria-haspopup="dialog" disabled={!accounts.length} onClick={() => openPanel(accounts.find(account => account.selected) || accounts[0])}><span className="codex-mark"><ProviderMark provider="codex" size={19} /></span>Codex<span className="provider-count">{accounts.length}</span></button><span className="provider-local"><ShieldCheck size={12} /> Local, encrypted accounts</span></nav></>}
+      {<><div className="page-heading"><div><h1>Quota management</h1><p><i /><span>{accounts.length} account{accounts.length === 1 ? '' : 's'}</span><b>·</b><span className="connected-count">{ready} available</span></p></div><div className="page-actions"><button className="email-toggle" aria-label={state.settings.privacy ? 'Show email addresses' : 'Hide email addresses'} onClick={() => changeSettings({ privacy: !state.settings.privacy })}>{state.settings.privacy ? <Eye size={15} /> : <EyeOff size={15} />}{state.settings.privacy ? 'Show emails' : 'Hide emails'}</button><button className="add-control header-add" onClick={() => setDialog({ kind: 'add' })}><Plus size={15} /> Add account</button><button className="refresh-all" disabled={state.refreshing || busy} onClick={() => void refresh()}><RefreshCw size={16} className={state.refreshing ? 'spin' : ''} />{state.refreshing ? 'Refreshing accounts…' : 'Refresh all accounts'}</button></div></div><nav className="provider-navigation" aria-label="Codex accounts"><button className="provider-tab" aria-current="page" aria-haspopup="dialog" disabled={!accounts.length} onClick={() => openPanel(accounts.find(account => account.selected) || accounts[0])}><span className="codex-mark"><ProviderMark provider="codex" size={19} /></span>Codex<span className="provider-count">{accounts.length}</span></button>{([...new Set(state.providers?.connections.map(row => row.provider) || [])]).map(kind => <button className="provider-tab connected-provider-tab" key={kind} onClick={() => openProvider(state.providers!.connections.find(row => row.provider === kind)!.id)} aria-haspopup="dialog"><ProviderMark provider={kind} size={19} />{providerNames[kind]}<span className="provider-count">{state.providers!.connections.filter(row => row.provider === kind).length}</span></button>)}<button className="connect-provider-nav" onClick={() => addProvider()}><Plus size={13} /> Add provider</button><span className="provider-local"><ShieldCheck size={12} /> Local, encrypted accounts</span></nav></>}
       {state.demo && <div className="sample-notice"><span>PREVIEW</span> Sample accounts · no live credentials connected{window.pulse && !live?.demo && <button onClick={() => setPreview(false)}>Return to my accounts <ArrowRight size={12} /></button>}</div>}
       {state.engineError && !preview && <div className="engine-error" role="alert"><Activity size={15} /><span>{state.engineError}</span><button onClick={() => void refresh()}>Retry</button></div>}
       {accounts.length > 0 && <RecommendationPanel state={state} open={openPanel} update={changeSettings} refresh={() => void refresh()} busy={busy} />}
@@ -147,12 +158,15 @@ export default function LedgerApp() {
         </article>;
       })}</section>}
       {<ForecastChart state={state} identity={chartIdentity} setIdentity={setChartIdentity} />}
+      <ProviderConnections value={state.providers} add={addProvider} open={openProvider} preview={preview} samples={() => setShowProviderSamples(true)} />
       <footer className="monitor-footer"><span><i className={state.engineError ? 'disconnected' : ''} /> {preview ? 'sample workspace' : state.refreshing ? 'refreshing quota…' : 'local collector'} <span>·</span> {age(state.snapshot.generatedAt)}</span><span>Percentages show independent remaining capacity <span>·</span> Windows-encrypted vault</span></footer>
     </main></>}
     {panelAccount && <AccountDrawer account={panelAccount} state={state} preview={preview} busy={busy} close={closePanel} choose={setPanelIdentity} rename={renameAccount} refresh={() => void refresh(panelAccount.id)} select={() => panelDialog('switch', panelAccount)} reconnect={() => panelDialog('add', panelAccount)} remove={() => panelDialog('remove', panelAccount)} notify={setNotice} exclude={() => void act(async () => { setLive(await api.setDisabled(panelAccount.id, !panelAccount.disabled)); }, undefined, false)} group={value => changeSettings({ accounts: { ...state.settings.accounts, [panelAccount.identity]: { ...state.settings.accounts[panelAccount.identity], label: state.settings.accounts[panelAccount.identity]?.label ?? '', pinned: state.settings.accounts[panelAccount.identity]?.pinned ?? false, group: value } } })} />}
+    {providerPanel && state.providers && <ProviderDrawer connection={providerPanel} value={state.providers} preview={preview} close={closeProviderPanel} choose={setProviderPanelId} reconnect={() => { setProviderPanelId(null); setDialog({ kind: 'provider', connection: providerPanel }); }} update={updateProviders} notify={setNotice} />}
     {notice && <div className="toast" role="status"><Activity size={15} /><span>{notice}</span><button className="icon-btn" aria-label="Dismiss message" onClick={() => setNotice('')}><X size={14} /></button></div>}
-    {dialog && <Dialog title={dialog.kind === 'add' ? 'Add a Codex account' : dialog.kind === 'import' ? 'Import from ccswap' : dialog.kind === 'switch' ? 'Select account for next launch' : dialog.kind === 'remove' ? 'Remove saved account' : dialog.kind === 'mobile' ? 'Phone companion' : dialog.kind === 'widgets' ? 'Desktop widget' : 'Monitor settings'} close={close} busy={busy || state.login?.phase === 'saving'}>
+    {dialog && <Dialog title={dialog.kind === 'provider' ? dialog.connection ? 'Reconnect provider' : 'Connect a provider' : dialog.kind === 'add' ? 'Add a Codex account' : dialog.kind === 'import' ? 'Import from ccswap' : dialog.kind === 'switch' ? 'Select account for next launch' : dialog.kind === 'remove' ? 'Remove saved account' : dialog.kind === 'mobile' ? 'Phone companion' : dialog.kind === 'widgets' ? 'Desktop widget' : 'Monitor settings'} close={close} busy={busy || state.login?.phase === 'saving'}>
       {dialog.kind === 'mobile' && <MobilePairing preview={preview} />}
+      {dialog.kind === 'provider' && <ProviderConnect key={dialog.connection?.id || dialog.provider || 'new'} preview={preview} existing={dialog.connection} initialProvider={dialog.provider} connected={(id, providers) => { updateProviders(providers); setDialog(null); openProvider(id); }} />}
       {dialog.kind === 'settings' && <RecoveryTools preview={preview} notify={setNotice} />}
       {dialog.kind === 'settings' && <label className="setting"><span>Expiring-reset and recovered-quota alerts</span><input type="checkbox" disabled={!state.settings.notifications} checked={state.settings.recommendationAlerts ?? true} onChange={event => changeSettings({ recommendationAlerts: event.target.checked })} /></label>}
       {dialog.kind === 'add' && <><AccountSignIn state={state} preview={preview} target={dialog.account} saved={setLive} notify={setNotice} />{preview && window.pulse && !live?.demo && <button className="outline-btn wide" onClick={() => { setPreview(false); close(); }}>Return to my real accounts</button>}<div className="dialog-rule" /><button className="outline-btn wide" disabled={preview || ['starting', 'waiting', 'saving'].includes(state.login?.phase || '')} onClick={() => setDialog({ kind: 'import' })}>Import existing ccswap accounts <ArrowRight size={14} /></button></>}

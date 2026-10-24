@@ -34,6 +34,14 @@ test('untrusted/public bind addresses are rejected', async () => {
   assert.equal(privateAddress('172.16.2.2'), true); assert.equal(privateAddress('172.32.2.2'), false);
 });
 
+test('phone provider reports have a separate compact allowlist with no credential or member-directory transport', () => {
+  const state = { ...sample, providers: { connections: [{ id: 'synthetic-id', provider: 'cursor', label: 'Team', status: 'ready', fetchedAt: null, secret: 'NEVER-SHARE', report: { scope: 'team', subject: 'Team', complete: true, secret: 'NEVER-SHARE', members: [{ email: 'private@example.test' }], quotas: [], metrics: [{ id: 'cost', label: 'Reported cost', value: '3.01', unit: 'USD' }], notes: ['Authorized report'] } }] } };
+  const snapshot = publicSnapshot(state), serialized = JSON.stringify(snapshot);
+  assert.equal(snapshot.providers.length, 1); assert.equal(snapshot.providers[0].report.metrics[0].value, '3.01');
+  assert.equal(snapshot.providers[0].report.scope, 'team'); assert.equal('members' in snapshot.providers[0].report, false);
+  assert.ok(!serialized.includes('NEVER-SHARE')); assert.ok(!serialized.includes('private@example.test'));
+});
+
 test('phone gets real account names, custom labels and privacy-controlled emails', () => {
   const settings = { accounts: {}, privacy: false };
   const account = publicSnapshot({ ...sample, settings }).accounts[0];

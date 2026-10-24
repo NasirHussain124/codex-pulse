@@ -26,7 +26,7 @@ public class CompanionViewTest {
         try (var activity = Robolectric.buildActivity(MainActivity.class).setup()) {
             assertNotNull(activity.get().getWindow().getDecorView());
             String text = text(activity.get().getWindow().getDecorView());
-            assertTrue(text.contains("Your Codex usage")); assertTrue(text.contains("Scan pairing QR"));
+            assertTrue(text.contains("Your usage, together")); assertTrue(text.contains("Scan pairing QR"));
         }
     }
     @Test public void widgetInflatesAndUnpairedStateIsHonest() {

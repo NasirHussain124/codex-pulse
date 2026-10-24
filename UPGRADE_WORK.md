@@ -89,10 +89,9 @@ Verification at this checkpoint:
 
 Still required before completing the full objective:
 
-- Other-provider adapters, connection flows, real capability-aware provider UI
-  and reports. Logos are assets, not evidence of a working connection. Copilot's
-  account.getQuota, Claude authorized organization reporting, Cursor team admin
-  reporting and Gemini supported sources remain to be implemented/validated.
+- Authenticated live checks for other providers require the user's own authorized
+  reporting credentials. Adapters and connection/report management flows are now
+  implemented; no personal Claude/Gemini subscription limits are claimed.
 - Live read-only reset-protocol integration check, backup/restart pairing
   integration, real-device LAN relocation and Tailscale end-to-end validation.
 - Final mobile/widget polish and release-wide UI/regression audit.
@@ -102,3 +101,29 @@ Still required before completing the full objective:
 - User-controlled Tailscale enrollment/permissions and any signing/hosting
   credentials remain external choices; don't create accounts, purchase resources,
   spend earned credits or expose public listeners as implementation shortcuts.
+
+### 0.6.0 release-candidate verification in progress
+
+- Implemented Copilot SDK quota plus verified GitHub identity, Claude organization
+  token/cost pagination, Cursor team spend pagination and Google-authorized Gemini
+  project monitoring. Bounded fixed HTTPS endpoints, no redirects/model sessions,
+  explicit capabilities and unknown values, encrypted connection vault, pause/
+  reconnect/remove/rename, identity guards, cancellation and rate-aware scheduling.
+- Compact read-only provider reports are included in pinned phone sync; no
+  provider credential or team-member directory is transported. Android renders
+  native provider quota versus organization/project usage without false 5h/7d.
+- 137 Node tests passed including the final backup regression. The bundled
+  Copilot stdio runtime starts/pings without authentication or AI sessions.
+  Desktop smoke checks passed for provider setup, all four opt-in sample reports,
+  narrow layouts, real logos and preserved Codex graph state.
+- Windows cold backup/restore now verified with actual Electron safeStorage
+  ciphertext across three processes, preserved original profile and paused
+  sharing. Backups refuse a newly generated Chromium encryption key until it has
+  been persisted by a normal quit; incomplete recoverability is never exported.
+- 28 Python tests and rebuilt frozen engine integration passed. Android 0.6.0
+  assembleDebug, 45 tests and lintDebug passed; the APK retains the installed
+  development certificate. Final packaged application,
+  source publication, release downloads and installed-PC update are underway.
+- This remains a release candidate: Windows executables are unsigned, Android
+  retains the existing development signing key, and real-device Tailscale/LAN
+  relocation plus provider credentials are not represented as already verified.

@@ -89,7 +89,7 @@ public final class CompanionClient {
                 pin -> PcDiscovery.find(context, pin));
             JSONObject snapshot = recovered.snapshot;
             connection = recovered.connection;
-            if (snapshot.getInt("schemaVersion") != 1 || snapshot.getJSONArray("accounts").length() > 200) throw new Exception("Unsupported PC response.");
+            ProviderText.validateSnapshot(snapshot);
             synchronized (PhoneStore.class) {
                 JSONObject data = store.read(), current = data.optJSONObject("connection");
                 if (current == null || !current.optString("id").equals(connection.optString("id")) || !current.optString("token").equals(connection.optString("token"))) throw new Exception("The paired PC changed while refreshing. Try again.");

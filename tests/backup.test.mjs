@@ -45,6 +45,12 @@ test('restore preserves the old profile, encrypted keys and pairing, while pausi
   assert.match(fs.readFileSync(path.join(f.profile, 'mobile-vault.json'), 'utf8'), /encrypted-synthetic-pairing/);
   assert.equal(fs.existsSync(path.join(f.root, '.quota-management.pending-restore.json')), false);
 });
+
+test('a new Chromium key must be on disk before exporting encrypted phone/provider vaults', t => {
+  const f = fixture(t); fs.writeFileSync(path.join(f.profile, 'Local State'), '{}');
+  assert.throws(() => backup.createBackup(f.profile, f.bundle, '0.6.0'), /Quit and reopen/);
+  assert.equal(fs.existsSync(path.join(f.profile, 'mobile-vault.json')), true);
+});
 test('a damaged current roster can be recovered without deleting its original folder', t => {
   const f = fixture(t), envelope = backup.createBackup(f.profile, f.bundle, '0.6.0');
   fs.writeFileSync(path.join(f.profile, 'vault/codex/sequence.json'), 'damaged-current-roster');

@@ -12,8 +12,8 @@ Previously named Codex Pulse. Upgrades retain the original desktop data director
 Windows application ID, Android package and encryption aliases so saved accounts
 and phone pairings are preserved. Internal executable/protocol names remain stable.
 
-**Windows 0.5.1 / Android 0.5.0 release candidate:** desktop + native Android usage viewer and
-home-screen widget. Local-first, Codex-only, no analytics. This is an independent
+**Windows / Android 0.6.0 release candidate:** desktop + native Android usage viewer and
+home-screen widget. Local-first, no analytics. This is an independent
 project, not an official OpenAI app. See [MOBILE.md](MOBILE.md) for pairing and
 [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) for production-validation gates.
 
@@ -22,7 +22,7 @@ project, not an official OpenAI app. See [MOBILE.md](MOBILE.md) for pairing and
 - Multi-account ledger, search, sorting, custom names, and email masking.
 - Clean 5h / 7 days account rows with readable percentages and short reset
   countdowns. Credits, banked resets and timestamps remain in Account details.
-- Codex-only quota-management header and a right-side account panel: click the
+- Codex account panel: click the
   Codex tab or any account row, choose an account, review quota, rename, refresh,
   reconnect, remove, or explicitly select it for the next compatible Codex launch.
 - Accessible panel keyboard navigation, focus containment, Escape dismissal,
@@ -38,7 +38,21 @@ project, not an official OpenAI app. See [MOBILE.md](MOBILE.md) for pairing and
 - Windows DPAPI encryption for app-managed saved credentials.
 - Floating desktop widget, system tray, Windows notifications and startup setting.
 - Local usage history and CSV export, warm dark appearance, email masking.
-- Per-account remaining-quota and drain-rate charts with explicitly estimated projections.
+- All-account independent history lines by default; per-account and 5h/7d selection,
+  gap-aware actual readings and explicitly optional estimated projections.
+- Explainable consume-before-reset, session-runway and reserve recommendations,
+  groups/exclusions, an upcoming-reset timeline and opt-in actionable alerts.
+- Banked-reset review through official Codex app-server RPC. Redemption is manual,
+  confirmed, idempotent and followed by an authoritative provider reading.
+- Encrypted same-Windows-user backup/restore, preserving the original profile and
+  phone trust, plus credential-free connection diagnostics.
+- Real authorized provider reporting: GitHub Copilot account quota; Claude API
+  organization token/cost reports; Cursor team billing; Gemini API project
+  monitoring. Each requires its own supported credential and permissions via
+  **Add provider**. These reports are never pooled into Codex capacity and do not
+  switch provider sign-ins. Personal Claude.ai or Gemini CLI subscription limits
+  are not claimed. Missing metrics stay unknown, not 0% or 100%.
+- Locally bundled, attributed Lobe Icons provider marks and original Q artwork.
 - A clearly labeled browser/sample preview, independent of live account operations.
 - Offline startup from the saved-account vault, with cache fallback and state
   resynchronization after tray reopen or renderer reload. A loading failure is
@@ -66,9 +80,14 @@ or install a replacement shell.
 The **Phone companion** button enables opt-in, read-only Android sync over a
 private network: one-time QR pairing, certificate-pinned HTTPS, encrypted phone
 cache, revocable devices, and configurable multi-account native widgets.
-The listener is off by default and after a full desktop restart. It exposes no
-account-management methods. iPhone widgets and an internet relay are not yet
-implemented; this version does not work from arbitrary networks.
+The listener is off by default. Opt in to automatic restart/network recovery and
+Windows sign-in startup in Phone companion/settings. LAN rediscovery preserves
+the paired certificate identity after an IP change. For different networks,
+enroll both devices in your own Tailscale network, choose the verified Tailscale
+adapter on the PC, and keep Tailscale connected on the phone. No public port or
+relay is created. It exposes no account-management methods. iPhone widgets and
+an internet relay are not implemented. Tailscale is separately installed and
+user-enrolled; a sleeping/offline PC can only supply saved phone readings.
 
 ## Build and run on Windows
 
@@ -140,7 +159,7 @@ active work or modify the desktop app's private credential store.
 
 ## Storage and integration boundaries
 
-App data is stored in Electron's per-user application-data directory. Pulse's
+App data is stored in `%USERPROFILE%\.quota-management`. Pulse's
 credential backups are DPAPI ciphertext bound to the Windows user. Codex's own
 active login stays in the format Codex expects. Importing existing ccswap
 accounts does not encrypt or delete their original backups.

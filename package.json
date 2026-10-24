@@ -1,8 +1,8 @@
 {
   "name": "codex-pulse",
   "productName": "Quota management",
-  "version": "0.5.2",
-  "description": "A private desktop home for all your Codex accounts, powered by ccswap.",
+  "version": "0.6.0",
+  "description": "Private quota recommendations and authorized AI usage reports, with a phone companion.",
   "author": "Codex Pulse contributors",
   "license": "MIT",
   "private": true,
@@ -18,6 +18,8 @@
     "package:dir": "npm run build && electron-builder --win --dir --x64 --publish never"
   },
   "dependencies": {
+    "@github/copilot-sdk": "1.0.26",
+    "google-auth-library": "11.3.1",
     "bonjour-service": "1.4.4",
     "qrcode": "1.5.4",
     "selfsigned": "5.5.0",
@@ -36,6 +38,7 @@
     "vite": "8.3.4"
   },
   "overrides": {
+    "@github/copilot-sdk": { "zod": "4.6.6" },
     "@electron/get": "5.1.0"
   },
   "build": {
@@ -44,6 +47,7 @@
     "executableName": "Codex Pulse",
     "directories": { "output": "release" },
     "files": ["dist/**/*", "electron/**/*", "package.json", "LICENSE", "THIRD_PARTY_NOTICES.md"],
+    "asarUnpack": ["node_modules/@github/copilot-sdk-win32-*/**/*", "node_modules/koffi/**/*"],
     "extraResources": [{ "from": "engine-dist", "to": "engine", "filter": ["**/*"] }],
     "win": { "target": ["nsis", "portable"], "icon": "public/pulse.ico", "signExecutable": false },
     "nsis": { "oneClick": false, "perMachine": false, "allowToChangeInstallationDirectory": true, "createDesktopShortcut": true, "shortcutName": "Quota management", "deleteAppDataOnUninstall": false, "artifactName": "Quota-Management-Setup-${version}-${arch}.${ext}" },

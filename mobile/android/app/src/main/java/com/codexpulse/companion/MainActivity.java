@@ -77,7 +77,7 @@ public final class MainActivity extends Activity {
         scroll.setOnApplyWindowInsetsListener((v, insets) -> { scroll.setPadding(insets.getSystemWindowInsetLeft(), insets.getSystemWindowInsetTop(), insets.getSystemWindowInsetRight(), insets.getSystemWindowInsetBottom()); return insets; });
         setContentView(scroll);
         LinearLayout brand = new LinearLayout(this); brand.setGravity(Gravity.CENTER_VERTICAL); ImageView mark = new ImageView(this); mark.setImageResource(R.drawable.ic_pulse); brand.addView(mark, new LinearLayout.LayoutParams(dp(32), dp(32))); TextView brandName = text("Quota management", 15, TEXT); brandName.setPadding(dp(10), 0, 0, 0); brand.addView(brandName); root.addView(brand);
-        TextView title = text("Your Codex usage", 28, TEXT); title.setTypeface(null, Typeface.BOLD); title.setPadding(0, dp(24), 0, dp(12)); root.addView(title);
+        TextView title = text("Your usage, together", 28, TEXT); title.setTypeface(null, Typeface.BOLD); title.setPadding(0, dp(24), 0, dp(12)); root.addView(title);
         root.addView(text("All your accounts. A little more headroom.", 13, MUTED));
         JSONObject data;
         try { data = new PhoneStore(this).read(); } catch (Exception error) { data = new JSONObject(); message = "Encrypted phone data could not be opened. Forget this connection and pair again."; }
@@ -97,6 +97,12 @@ public final class MainActivity extends Activity {
             JSONObject snapshot = data.optJSONObject("snapshot"); JSONArray accounts = snapshot == null ? null : snapshot.optJSONArray("accounts");
             if (accounts == null || accounts.length() == 0) root.addView(text("No account readings yet. Refresh with your PC online.", 15, MUTED));
             else for (int i = 0; i < accounts.length(); i++) { JSONObject account = accounts.optJSONObject(i); if (account != null) account(account, offline); }
+            JSONArray providers = snapshot == null ? null : snapshot.optJSONArray("providers");
+            if (providers != null && providers.length() > 0) {
+                TextView heading = text("Connected provider reports", 20, TEXT); heading.setPadding(0, dp(28), 0, dp(4)); root.addView(heading);
+                root.addView(text("Each provider keeps its own reporting scope.", 12, MUTED));
+                for (int i = 0; i < Math.min(providers.length(), 20); i++) { JSONObject connection = providers.optJSONObject(i); if (connection != null) provider(connection, offline); }
+            }
             root.addView(button(busy ? "Refreshing…" : "Refresh from PC", true, () -> work(() -> new CompanionClient(this).refresh())));
             root.addView(button("Pair another PC", false, this::scan));
             AppWidgetManager widgets = AppWidgetManager.getInstance(this);
@@ -106,7 +112,7 @@ public final class MainActivity extends Activity {
             }));
             root.addView(button("Forget this PC", false, this::forget));
         }
-        root.addView(text("Private Wi-Fi sync · 0.5.0", 11, MUTED));
+        root.addView(text("Private connection · 0.6.0", 11, MUTED));
         root.addView(button("Open-source notices", false, () -> {
             try (var input = getAssets().open("NOTICE.txt")) {
                 var output = new java.io.ByteArrayOutputStream(); byte[] bytes = new byte[2048]; int length;
@@ -138,6 +144,44 @@ public final class MainActivity extends Activity {
         card.addView(limits);
         if (stale) card.addView(text("Saved · " + QuotaText.observed(account), 11, MUTED));
         root.addView(card);
+    }
+    private void provider(JSONObject connection, boolean offline) {
+        if (ProviderText.supported(connection.optString("provider"))) root.addView(providerCard(connection, offline));
+    }
+    LinearLayout providerCard(JSONObject connection, boolean offline) {
+        LinearLayout card = new LinearLayout(this); card.setOrientation(LinearLayout.VERTICAL); card.setPadding(dp(18), dp(16), dp(18), dp(16)); card.setBackground(shape(Color.rgb(47, 44, 63), 24));
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2); params.setMargins(0, dp(14), 0, 0); card.setLayoutParams(params);
+        String brand = ProviderText.name(connection.optString("provider"));
+        TextView name = text(ProviderText.clean(connection.optString("label", brand), 48), 17, TEXT); name.setTypeface(null, Typeface.BOLD); name.setMaxLines(2); card.addView(name);
+        JSONObject report = connection.optJSONObject("report");
+        if (report == null) { card.addView(text("Report not available yet", 12, MUTED)); return card; }
+        card.addView(text(brand + " · " + ProviderText.clean(report.optString("scope", "report"), 20), 12, MUTED));
+        boolean stale = ProviderText.stale(connection, offline);
+        if (stale) card.addView(text("paused".equals(connection.optString("status")) ? "Monitoring paused · saved reading" : "Saved reading · " + QuotaText.observed(connection), 11, MUTED));
+        if (!report.optBoolean("complete")) card.addView(text("Partial report · missing totals are not zero", 11, MUTED));
+        JSONArray quotas = report.optJSONArray("quotas");
+        if (quotas != null) for (int i = 0; i < Math.min(12, quotas.length()); i++) {
+            JSONObject quota = quotas.optJSONObject(i); if (quota == null) continue;
+            card.addView(text(ProviderText.clean(quota.optString("label", "Provider quota"), 120), 12, MUTED));
+            card.addView(text(ProviderText.quotaValue(quota), 26, stale ? MUTED : ACCENT));
+            int percent = ProviderText.percent(quota);
+            if (percent >= 0) {
+                ProgressBar bar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal); bar.setMax(100); bar.setProgress(percent); bar.setProgressTintList(ColorStateList.valueOf(stale ? MUTED : ACCENT)); bar.setProgressBackgroundTintList(ColorStateList.valueOf(Color.rgb(70, 64, 85))); bar.setLayoutParams(new LinearLayout.LayoutParams(-1, dp(5))); bar.setContentDescription(quota.optString("label") + ", " + percent + " percent remaining"); card.addView(bar);
+            }
+            String reset = quota.optString("resetsAt", "");
+            card.addView(text(reset.isEmpty() || reset.equals("null") ? ProviderText.clean(quota.optString("period", "Reset not reported"), 80) : QuotaText.reset(quota), 11, MUTED));
+        }
+        JSONArray metrics = report.optJSONArray("metrics");
+        if (metrics != null) for (int i = 0; i < Math.min(6, metrics.length()); i++) {
+            JSONObject metric = metrics.optJSONObject(i); if (metric == null) continue;
+            card.addView(text(ProviderText.clean(metric.optString("label", "Metric"), 120), 12, MUTED)); card.addView(text(ProviderText.metricValue(metric), 22, stale ? MUTED : ACCENT));
+        }
+        JSONArray notes = report.optJSONArray("notes");
+        if (notes != null && notes.length() > 0) {
+            StringBuilder detail = new StringBuilder(); for (int i = 0; i < Math.min(2, notes.length()); i++) { if (i > 0) detail.append("\n\n"); detail.append(ProviderText.clean(notes.optString(i), 300)); }
+            TextView about = text("About this report", 12, ACCENT); about.setMinHeight(dp(48)); about.setGravity(Gravity.CENTER_VERTICAL); about.setOnClickListener(view -> new AlertDialog.Builder(this).setTitle(brand).setMessage(detail.toString()).setPositiveButton("Close", null).show()); about.setFocusable(true); card.addView(about);
+        }
+        return card;
     }
     private void paste() {
         EditText input = new EditText(this); input.setHint("codexpulse://pair?data=…"); input.setTextSize(13); input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS); input.setPadding(dp(20), dp(15), dp(20), dp(15));
