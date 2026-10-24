@@ -127,3 +127,22 @@ Still required before completing the full objective:
 - This remains a release candidate: Windows executables are unsigned, Android
   retains the existing development signing key, and real-device Tailscale/LAN
   relocation plus provider credentials are not represented as already verified.
+
+### Delivered 0.6.0 release candidate
+
+- Public source pushed to `codex/intelligent-dashboard`, runtime release commit
+  `8d39ee3da8acba9188d32e8da767cd9393dc4cad`; public release tag `v0.6.0`.
+- Windows Setup/Portable, Android APK and SHA256SUMS uploaded. An unauthenticated
+  Android release download returned HTTP 200, 411631 bytes, exact published hash.
+- Final packaged desktop passed all 72 boolean UI/runtime checks, including the
+  bundled native Copilot runtime. Packaged offline lifecycle verified migration,
+  four accounts, tray/reload/cold restart and encrypted phone pairing/revocation.
+- Installed PC updated in place. Installed EXE, app.asar and engine hashes match
+  the tested package. Live 0.6.0 health reports four vault accounts, four rendered
+  accounts, initialized state and no engine error. No ChatGPT process was closed.
+- Before-update profile and complete previous application are preserved at
+  `%USERPROFILE%/.quota-management-backups/before-0.6.0-c0616876-8bd2-4371-b899-5c9066de29f9`.
+  Profile copy/fingerprint and four accounts were verified before installation.
+- Production-signing/update certification, real-device cross-network testing and
+  user-authorized live reporting keys remain outstanding; the whole goal is not
+  represented as complete merely because this tested release candidate shipped.
