@@ -9,7 +9,7 @@ contextBridge.exposeInMainWorld('pulse', Object.freeze({
   mobileStop: () => ipcRenderer.invoke('pulse:mobile-stop'),
   copyLoginCode: () => ipcRenderer.invoke('pulse:login-copy-code'),
   mobileCopyPair: text => ipcRenderer.invoke('pulse:mobile-copy-pair', text),
-  mobileDownload: () => ipcRenderer.invoke('pulse:android-download'),
+  mobileDownload: source => ipcRenderer.invoke('pulse:android-download', source),
   mobilePair: () => ipcRenderer.invoke('pulse:mobile-pair'),
   mobileCancelPair: () => ipcRenderer.invoke('pulse:mobile-cancel-pair'),
   mobileRevoke: id => ipcRenderer.invoke('pulse:mobile-revoke', id),

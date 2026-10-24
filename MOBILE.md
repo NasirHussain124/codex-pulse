@@ -11,6 +11,9 @@ are transferred to the phone. The desktop continues to use ccswap 0.39.2.
 
 1. Install the Android APK from this repository's public release on your phone.
    The development APK is debug-signed, not a Play Store production build.
+   If GitHub does not open, use the [direct Android 0.6.0 file](https://cdn.jsdelivr.net/gh/NasirHussain124/codex-pulse@d8c4abb6884dde1329b2da6ebbb3cc84c3b71667/Quota-management-Android.apk)
+   in Chrome. Windows 0.6.1 includes this direct source and an alternate download
+   button. Both mirrors retain the same signed APK and published SHA-256 hash.
 2. Connect the phone and PC to the same trusted private Wi-Fi/Ethernet network.
 3. In Quota management, choose **Phone companion**, select the private PC address,
    and enable the connection. If Windows asks, allow the private network only.

@@ -18,6 +18,7 @@ const { createBackup, readBackup, stageRestore, applyRestore, backupEnvelope } =
 const { actionableAlerts } = require('./alerts.cjs');
 const { ProviderManager } = require('./providers/manager.cjs');
 const { SOURCES: PROVIDER_SOURCES } = require('./providers/public.cjs');
+const { androidDownload } = require('./downloads.cjs');
 
 app.setAppUserModelId('com.codexpulse.desktop');
 protocol.registerSchemesAsPrivileged([{ scheme: 'pulse', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
@@ -339,7 +340,7 @@ app.whenReady().then(async () => {
     clipboard.writeText(code); return true;
   });
   handle('pulse:mobile-copy-pair', (text) => copyPairingLink(text, clipboard));
-  handle('pulse:android-download', () => shell.openExternal('https://raw.githubusercontent.com/NasirHussain124/codex-pulse/refs/heads/codex/android-download-v0.5.0/Quota-management-Android.apk'));
+  handle('pulse:android-download', (source = 'direct') => shell.openExternal(androidDownload(source)));
   handle('pulse:mobile-cancel-pair', () => getMobile().cancelPair());
   handle('pulse:mobile-pair', async () => {
     const payload = getMobile().pair();

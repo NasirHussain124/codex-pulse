@@ -35,7 +35,9 @@ export function MobilePairing({ preview }: { preview: boolean }) {
       {status && status.devices.length > 0 && <div className="paired-devices"><h3>Paired devices</h3>{status.devices.map(device => <div key={device.id}><span><strong>{device.name}</strong><small>{device.lastSeenAt ? `Last connected ${new Date(device.lastSeenAt).toLocaleString()}` : 'Waiting for first reading'}</small></span><button className="icon-btn" aria-label={`Revoke ${device.name}`} disabled={busy} onClick={() => void act(async () => { setStatus(await api.mobileRevoke!(device.id)); })}><Trash2 size={15} /></button></div>)}</div>}
     </>}
     {(error || status?.error) && <p className="pair-error" role="alert">{error || status?.error}</p>}
-    <button className="outline-btn wide spaced" disabled={preview || busy} onClick={() => void act(async () => { await api.mobileDownload?.(); })}><Smartphone size={15} /> Download Android app</button>
+    <div className="phone-downloads" aria-label="Android downloads"><button className="outline-btn wide spaced" disabled={preview || busy} onClick={() => void act(async () => { await api.mobileDownload?.('direct'); })}><Smartphone size={15} /> Download Android app</button>
+    <button className="outline-btn wide spaced" disabled={preview || busy} onClick={() => void act(async () => { await api.mobileDownload?.('alternate'); })}>Try alternate download</button>
+    <p className="fine-print">Downloads open outside the app. If a phone’s chat browser does not open the file, copy the link into Chrome. Install over your existing app; do not uninstall or bypass an installation error.</p></div>
     <p className="fine-print">If Windows asks about network access, allow only your private network. No firewall rules or router port forwarding are changed automatically.</p>
   </div>;
 }

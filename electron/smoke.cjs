@@ -77,6 +77,7 @@ async function runSmoke({ app, window, createWindow, showQuickView, hideQuickVie
     await js(`document.querySelector('.companion-shortcut button').click()`);
     await pause();
     report.mobilePairingEntry = await js(`document.querySelector('[role="dialog"]').innerText.includes('Phone companion') && document.body.innerText.includes('Sample accounts cannot be paired')`);
+    report.androidDownloadChoices = await js(`document.querySelectorAll('[aria-label="Android downloads"] button').length === 2 && [...document.querySelectorAll('[aria-label="Android downloads"] button')].every(button => button.disabled)`);
     await capture(window, 'codex-pulse-phone-pairing.png');
     await js(`document.querySelector('button[aria-label="Close dialog"]').click()`);
     await pause();

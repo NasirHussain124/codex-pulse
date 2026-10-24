@@ -63,7 +63,7 @@ export interface PulseAPI {
   cancelProviderConnect?(): Promise<void>; refreshProvider?(id: string): Promise<OtherProviders>;
   enableProvider?(id: string, enabled: boolean): Promise<OtherProviders>; renameProvider?(id: string, label: string): Promise<OtherProviders>;
   removeProvider?(id: string): Promise<OtherProviders>; providerDocs?(provider: OtherProvider, setup?: boolean): Promise<unknown>;
-  mobileCopyPair?(text: string): Promise<boolean>; mobileDownload?(): Promise<unknown>;
+  mobileCopyPair?(text: string): Promise<boolean>; mobileDownload?(source?: 'direct' | 'alternate' | 'release'): Promise<unknown>;
   mobilePair?(): Promise<{ text: string; qr: string; expiresAt: number }>; mobileCancelPair?(): Promise<void>; mobileRevoke?(id: string): Promise<MobileStatus>;
 }
 declare global { interface Window { pulse?: PulseAPI } }
