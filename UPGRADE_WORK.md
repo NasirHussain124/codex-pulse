@@ -146,3 +146,20 @@ Still required before completing the full objective:
 - Production-signing/update certification, real-device cross-network testing and
   user-authorized live reporting keys remain outstanding; the whole goal is not
   represented as complete merely because this tested release candidate shipped.
+
+### 0.6.1 download repair
+
+- User reported that all supplied pages failed to open. GitHub release remained
+  public and the release APK returned HTTP 200 here; user-side access remains
+  unconfirmed. Found and removed the PC button's obsolete Android 0.5.0 address.
+- Published an exact APK mirror at immutable commit
+  `d8c4abb6884dde1329b2da6ebbb3cc84c3b71667` on the distribution-only branch
+  `codex/android-download-v0.6.0`. Both raw GitHub and jsDelivr direct-file URLs
+  returned HTTP 200, 411631 bytes and the release's exact SHA-256 hash.
+- Primary PC button now uses jsDelivr without a GitHub page; an alternate raw
+  source is exposed. Only fixed allowlisted sources are accepted by IPC.
+- 139 Node tests and all 73 packaged smoke checks passed. Public v0.6.1 ships
+  the Windows hotfix and unchanged Android 0.6.0 APK. Installer returned exit 0;
+  installed app.asar matches the tested package. Live 0.6.1 reports four saved
+  and four displayed accounts with no engine error. Before-update profile is
+  preserved under `.quota-management-backups/before-0.6.1-f842f3f0-4dd4-4aa1-9dcd-953db8b47630`.
