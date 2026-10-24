@@ -1,9 +1,13 @@
 const fs = require('node:fs');
 const path = require('node:path');
+const { lanAddress, tailscaleAddress } = require('./network.cjs');
 
 const defaults = Object.freeze({ theme: 'dark', interval: 120, privacy: false,
   notifications: true, threshold: 20, startAtLogin: false, closeToTray: true,
-  widgetWindow: 'weekly', widgetTop: true, compact: false, accounts: {} });
+  widgetWindow: 'weekly', widgetTop: true, compact: false, accounts: {},
+  recommendationMode: 'consume', reservePercent: 20, sessionMinutes: 60,
+  recommendationAlerts: true, mobileResume: false, mobileDiscovery: false,
+  mobileTransport: 'lan', mobileAddress: '' });
 
 function validateSettings(input, previous = defaults) {
   const out = { ...previous };
@@ -11,12 +15,18 @@ function validateSettings(input, previous = defaults) {
   if ([120, 300, 600].includes(input.interval)) out.interval = input.interval;
   if ([10, 20, 30].includes(input.threshold)) out.threshold = input.threshold;
   if (['weekly', 'five_hour'].includes(input.widgetWindow)) out.widgetWindow = input.widgetWindow;
-  for (const key of ['privacy', 'notifications', 'startAtLogin', 'closeToTray', 'widgetTop', 'compact']) {
+  if (['consume', 'runway', 'reserve'].includes(input.recommendationMode)) out.recommendationMode = input.recommendationMode;
+  if ([10, 20, 30, 40].includes(input.reservePercent)) out.reservePercent = input.reservePercent;
+  if ([30, 60, 120, 240].includes(input.sessionMinutes)) out.sessionMinutes = input.sessionMinutes;
+  if (['lan', 'tailscale'].includes(input.mobileTransport)) out.mobileTransport = input.mobileTransport;
+  if (typeof input.mobileAddress === 'string' && (input.mobileAddress === '' || lanAddress(input.mobileAddress) || tailscaleAddress(input.mobileAddress))) out.mobileAddress = input.mobileAddress;
+  for (const key of ['privacy', 'notifications', 'startAtLogin', 'closeToTray', 'widgetTop', 'compact', 'recommendationAlerts', 'mobileResume', 'mobileDiscovery']) {
     if (typeof input[key] === 'boolean') out[key] = input[key];
   }
   if (input.accounts && typeof input.accounts === 'object' && !Array.isArray(input.accounts)) {
     out.accounts = Object.fromEntries(Object.entries(input.accounts).filter(([id]) => /^[a-f0-9]{16}$/.test(id)).slice(0, 200)
-      .map(([id, value]) => [id, { label: typeof value?.label === 'string' ? value.label.trim().slice(0, 48) : '', pinned: Boolean(value?.pinned) }]));
+      .map(([id, value]) => [id, { label: typeof value?.label === 'string' ? value.label.trim().slice(0, 48) : '', pinned: Boolean(value?.pinned),
+        ...(['personal', 'work', 'reserved', 'none'].includes(value?.group) ? { group: value.group } : {}) }]));
   }
   return out;
 }

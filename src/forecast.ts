@@ -3,18 +3,29 @@ import type { Account, HistorySample, QuotaWindow } from './types';
 export interface Reading { at: number; remaining: number }
 export function readingsFor(history: HistorySample[], account: Account | undefined, windowId: string): Reading[] {
   if (!account) return [];
-  return history.flatMap(sample => {
+  const points = history.flatMap(sample => {
     const row = sample.accounts.find(a => a.identity === account.identity);
     const window = row?.windows.find(w => windowId === 'weekly' ? w.durationMinutes === 10080 : w.id === windowId);
     const at = new Date(row?.fetchedAt || sample.at).getTime();
-    return window && Number.isFinite(at) ? [{ at, remaining: window.remainingPercent }] : [];
-  }).filter((point, i, list) => i === 0 || point.at > list[i - 1].at).sort((a, b) => a.at - b.at);
+    return window && Number.isFinite(at) && Number.isFinite(window.remainingPercent) && window.remainingPercent >= 0 && window.remainingPercent <= 100 ? [{ at, remaining: window.remainingPercent }] : [];
+  });
+  return [...new Map(points.map(point => [point.at, point])).values()].sort((a, b) => a.at - b.at);
+}
+export function readingSegments(points: Reading[], maxGapMs = 1800000): Reading[][] {
+  const segments: Reading[][] = [];
+  for (const point of points) {
+    const segment = segments.at(-1);
+    if (!segment || point.at - segment.at(-1)!.at > maxGapMs) segments.push([point]);
+    else segment.push(point);
+  }
+  return segments;
 }
 export function estimateDrain(points: Reading[]): number | null {
   // A quota reset starts a new series. Do not extrapolate across it.
   let start = 0;
   for (let i = 1; i < points.length; i++) if (points[i].remaining > points[i - 1].remaining + 2) start = i;
-  const series = points.slice(start).slice(-48);
+  const continuous = readingSegments(points.slice(start)).at(-1) || [];
+  const series = continuous.slice(-48);
   if (series.length < 2) return null;
   const first = series[0], last = series.at(-1)!;
   const hours = (last.at - first.at) / 3600000;

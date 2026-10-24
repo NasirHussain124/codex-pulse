@@ -7,4 +7,8 @@ public class EndpointPolicyTest {
         for (String endpoint : new String[]{"http://192.168.1.1:47831", "https://8.8.8.8:443", "https://example.com:443", "https://192.168.1.9:443/path", "https://user@192.168.1.9:443", "https://172.32.0.1:443", "https://192.168.999.1:443", "https://127.0.0.1:443", "https://192.168.1.1:443#x", "https://192.168.1.1:443?x=1"}) { try { EndpointPolicy.validate(endpoint); fail(endpoint); } catch (IllegalArgumentException expected) { } }
     }
     @Test public void validatesExactSha256Pin() { EndpointPolicy.validatePin("ab".repeat(32)); for (String pin : new String[]{"", "ab".repeat(31), "gg".repeat(32)}) { try { EndpointPolicy.validatePin(pin); fail(pin); } catch (IllegalArgumentException expected) { } } }
+    @Test public void supportsOnlyTailscaleCgnatRangeForRemoteEndpoints() {
+        for (String ip : new String[]{"100.64.0.1", "100.100.5.2", "100.127.255.254"}) assertEquals(ip, EndpointPolicy.validate("https://" + ip + ":47831").getHost());
+        for (String ip : new String[]{"100.63.255.255", "100.128.0.1", "100.999.1.1"}) { try { EndpointPolicy.validate("https://" + ip + ":47831"); fail(ip); } catch (IllegalArgumentException expected) { } }
+    }
 }

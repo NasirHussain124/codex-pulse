@@ -1,4 +1,5 @@
 <resources>
+    <color name="quota_icon_background">#25212E</color>
     <color name="widget_surface">#26242E</color><color name="widget_text">#F0EAF8</color>
     <color name="widget_muted">#B7ADC6</color><color name="widget_accent">#DED0F4</color>
     <color name="widget_track">#51475F</color>

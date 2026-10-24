@@ -16,7 +16,7 @@ public final class EndpointPolicy {
             if (!octets[i].matches("0|[1-9][0-9]{0,2}")) throw new IllegalArgumentException("Invalid private address.");
             ip[i] = Integer.parseInt(octets[i]); if (ip[i] > 255) throw new IllegalArgumentException("Invalid private address.");
         }
-        if (!(ip[0] == 10 || ip[0] == 192 && ip[1] == 168 || ip[0] == 172 && ip[1] >= 16 && ip[1] <= 31)) throw new IllegalArgumentException("This version pairs only over your private network.");
+        if (!(ip[0] == 10 || ip[0] == 192 && ip[1] == 168 || ip[0] == 172 && ip[1] >= 16 && ip[1] <= 31 || ip[0] == 100 && ip[1] >= 64 && ip[1] <= 127)) throw new IllegalArgumentException("Use a private LAN or Tailscale PC address.");
         return uri;
     }
     public static void validatePin(String pin) {

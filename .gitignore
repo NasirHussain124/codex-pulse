@@ -17,6 +17,11 @@ snapshot.json
 history.json
 health.json
 mobile-vault.json
+providers-vault.json
+provider-reports.json
+reset-attempts.json
+alerts.json
+*.qmbak
 *.jks
 *.keystore
 local.properties

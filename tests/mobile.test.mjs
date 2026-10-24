@@ -95,3 +95,19 @@ test('concurrent enable/disable requests cannot orphan a listener', async t => {
   await Promise.all([bridge.start('127.0.0.1'), bridge.start('127.0.0.1'), bridge.stop()]);
   assert.equal(bridge.status().enabled, false); assert.equal(bridge.server, null);
 });
+
+test('certificate and paired read-only token survive a new bridge process and listener restart', async t => {
+  let saved = null;
+  const options = { readSecret: () => saved, writeSecret: value => { saved = structuredClone(value); }, getState: () => sample, port: 0, allowLoopback: true };
+  const first = new MobileBridge(options); await first.start('127.0.0.1');
+  t.after(() => first.stop());
+  const qr = first.pair();
+  const paired = await request(first, '/v1/pair', { method: 'POST', body: { code: qr.code } });
+  const fingerprint = first.fingerprint;
+  await first.stop();
+  const second = new MobileBridge(options); await second.start('127.0.0.1'); t.after(() => second.stop());
+  assert.equal(second.fingerprint, fingerprint);
+  assert.equal(second.status().devices.length, 1);
+  assert.equal((await request(second, '/v1/snapshot', { token: paired.body.token, pin: fingerprint })).code, 200);
+  assert.equal((await request(second, '/v1/pair', { method: 'POST', body: { code: qr.code } })).code, 401);
+});

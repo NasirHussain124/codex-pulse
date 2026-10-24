@@ -1,10 +1,12 @@
 const https = require('node:https');
 const os = require('node:os');
 const { randomBytes, randomUUID, createHash, timingSafeEqual, X509Certificate } = require('node:crypto');
+const { lanAddress, networkEntries } = require('./network.cjs');
+const { announce } = require('./discovery.cjs');
 const digest = value => createHash('sha256').update(value).digest('hex');
-const privateAddress = value => /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(value);
+const privateAddress = lanAddress;
 function addresses() {
-  return [...new Set(Object.values(os.networkInterfaces()).flat().filter(item => item && item.family === 'IPv4' && !item.internal && privateAddress(item.address)).map(item => item.address))];
+  return [...new Set(networkEntries().map(item => item.address))];
 }
 function publicSnapshot(state) {
   return { schemaVersion: 1, generatedAt: state.snapshot.generatedAt, servedAt: new Date().toISOString(),
@@ -19,8 +21,8 @@ function publicSnapshot(state) {
     })) };
 }
 class MobileBridge {
-  constructor({ readSecret, writeSecret, getState, port = 47831, allowLoopback = false, clock = Date.now }) {
-    Object.assign(this, { readSecret, writeSecret, getState, port, allowLoopback, clock });
+  constructor({ readSecret, writeSecret, getState, port = 47831, allowLoopback = false, clock = Date.now, networks = networkEntries, discoverable = () => false, advertise = announce }) {
+    Object.assign(this, { readSecret, writeSecret, getState, port, allowLoopback, clock, networks, discoverable, advertise });
     this.server = null; this.address = null; this.pairing = null; this.rate = new Map(); this.error = null;
     this.queue = Promise.resolve();
     this.vault = readSecret() || { devices: [] };
@@ -28,14 +30,14 @@ class MobileBridge {
   }
   save() { this.writeSecret(this.vault); }
   status() { return { enabled: Boolean(this.server?.listening), address: this.address,
-    port: this.server?.address()?.port || this.port, addresses: addresses(), error: this.error,
+    port: this.server?.address()?.port || this.port, addresses: this.networks().map(n => n.address), networks: this.networks(), error: this.error,
     devices: this.vault.devices.map(({ id, name, createdAt, lastSeenAt }) => ({ id, name, createdAt, lastSeenAt })) }; }
   start(address) {
     const task = this.queue.then(() => this.startInternal(address));
     this.queue = task.catch(() => {}); return task;
   }
   async startInternal(address) {
-    if (!(addresses().includes(address) || this.allowLoopback && address === '127.0.0.1')) throw new Error('Choose a private Wi-Fi/Ethernet address from this PC.');
+    if (!(this.networks().some(n => n.address === address) || this.allowLoopback && address === '127.0.0.1')) throw new Error('Choose a private Wi-Fi/Ethernet or verified Tailscale address from this PC.');
     if (this.server?.listening && this.address === address) return this.status();
     await this.stopInternal();
     if (!this.vault.tls) {
@@ -56,7 +58,7 @@ class MobileBridge {
     try {
       await new Promise((resolve, reject) => { server.once('error', reject); server.listen(this.port, address, resolve); });
       server.on('error', () => { this.error = 'Phone connection stopped. Disable and enable it again.'; });
-      this.error = null; return this.status();
+      this.error = null; this.updateDiscovery(); return this.status();
     } catch { this.server = null; this.address = null; throw new Error('Could not open the private phone connection. Choose another interface or check port 47831.'); }
   }
   stop() {
@@ -64,9 +66,18 @@ class MobileBridge {
     this.queue = task.catch(() => {}); return task;
   }
   async stopInternal() {
+    this.stopDiscovery?.(); this.stopDiscovery = null;
     this.pairing = null; const server = this.server; this.server = null; this.address = null;
     if (server) await new Promise(resolve => { server.close(resolve); server.closeAllConnections(); });
     return this.status();
+  }
+  updateDiscovery() {
+    this.stopDiscovery?.(); this.stopDiscovery = null;
+    if (!this.server?.listening || !this.discoverable() || !lanAddress(this.address)) return;
+    try {
+      this.stopDiscovery = this.advertise({ address: this.address, port: this.server.address().port, fingerprint: this.fingerprint,
+        onError: () => { this.error = 'Local discovery is unavailable. The pinned direct connection still works; retry or use Tailscale.'; } });
+    } catch { this.error = 'Local discovery is unavailable. The pinned direct connection still works; retry or use Tailscale.'; }
   }
   pair() {
     if (!this.server?.listening) throw new Error('Enable the local phone connection first.');

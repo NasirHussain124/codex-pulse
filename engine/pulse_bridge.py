@@ -21,7 +21,9 @@ import re
 import sys
 import tempfile
 import time
+import uuid
 from typing import Any
+from reset_rpc import ResetRPC, ResetError, public_review
 
 from claude_swap.codex import CodexAccountSwitcher, _plan_type_from_auth, refresh_codex_auth
 from claude_swap.codex_usage import CodexUsageError
@@ -31,7 +33,7 @@ from claude_swap.locking import FileLock
 from claude_swap.usage_store import UsageEntry
 
 
-def dpapi(data: bytes, *, decrypt: bool = False) -> bytes:
+def dpapi(data: bytes, *, decrypt: bool = False, purpose: bytes | None = None) -> bytes:
     if sys.platform != "win32":
         raise ConfigError("This build requires Windows secure storage.")
 
@@ -43,13 +45,15 @@ def dpapi(data: bytes, *, decrypt: bool = False) -> bytes:
     source = ctypes.create_string_buffer(data)
     incoming = Blob(len(data), ctypes.cast(source, ctypes.POINTER(ctypes.c_ubyte)))
     outgoing = Blob()
+    entropy_buffer = ctypes.create_string_buffer(purpose) if purpose else None
+    entropy = Blob(len(purpose), ctypes.cast(entropy_buffer, ctypes.POINTER(ctypes.c_ubyte))) if purpose else None
     fn = crypt.CryptUnprotectData if decrypt else crypt.CryptProtectData
     fn.argtypes = [ctypes.POINTER(Blob), ctypes.c_void_p, ctypes.c_void_p,
                    ctypes.c_void_p, ctypes.c_void_p, ctypes.c_ulong, ctypes.POINTER(Blob)]
     fn.restype = ctypes.c_int
     kernel.LocalFree.argtypes = [ctypes.c_void_p]
     kernel.LocalFree.restype = ctypes.c_void_p
-    if not fn(ctypes.byref(incoming), None, None, None, None, 1, ctypes.byref(outgoing)):
+    if not fn(ctypes.byref(incoming), None, ctypes.byref(entropy) if entropy else None, None, None, 1, ctypes.byref(outgoing)):
         raise ConfigError("Windows could not unlock this account. Save its login again on this Windows account.")
     try:
         return ctypes.string_at(outgoing.data, outgoing.size)
@@ -241,12 +245,27 @@ def public_account(account, now: float) -> dict:
     identity = hashlib.sha256(f"{account.email}\0{account.org_uuid}".encode()).hexdigest()[:16]
     balance = finite(usage.get("credits", {}).get("balance")) if isinstance(usage.get("credits"), dict) else None
     resets = usage.get("reset_credits", {})
+    count = finite(resets.get("available")) if isinstance(resets, dict) else None
+    count = int(count) if count is not None and count >= 0 and count.is_integer() else None
+    expiry = resets.get("expires_at") if isinstance(resets, dict) else None
+    if not isinstance(expiry, str):
+        expiry = None
+    else:
+        from datetime import datetime
+        try:
+            parsed = datetime.fromisoformat(expiry.replace("Z", "+00:00"))
+            if parsed.tzinfo is None:
+                expiry = None
+        except (ValueError, OverflowError):
+            expiry = None
     return {"id": account.number, "identity": identity, "email": account.email,
             "plan": account.org_name.removeprefix("Codex "), "provider": "codex",
             "selected": account.is_active, "disabled": account.disabled,
             "status": status, "hint": hint, "windows": windows,
             "fetchedAt": iso(entry.fetched_at), "credits": balance,
-            "bankedResets": resets.get("available") if isinstance(resets, dict) else None}
+            "bankedResets": count,
+            "resetCredits": {"available": count, "earliestExpiresAt": expiry,
+                             "detailsKnown": expiry is not None}}
 
 
 class PulseBridge:
@@ -297,14 +316,32 @@ class PulseBridge:
                 failures = a.usage.consecutive_failures
                 self.retry_at[a.number] = now + (min(3600, 120 * 2 ** min(failures, 5)) if failures else 120)
         if eligible:
-            atomic_json(self.root / "readings.json", {"accounts": {
-                a.number: {"usage": a.usage.last_good, "at": a.usage.fetched_at,
-                    "identity": hashlib.sha256(f"{a.email}\0{a.org_uuid}".encode()).hexdigest()}
-                for a in snapshot.accounts if a.usage.last_good is not None}})
+            self._persist_usage(snapshot.accounts)
         return {"schemaVersion": 1, "generatedAt": iso(time.time()), "accounts": accounts,
                 "engine": {"name": "ccswap", "version": "0.39.2", "secureStorage": "Windows DPAPI"}}
 
+    def _persist_usage(self, accounts):
+        atomic_json(self.root / "readings.json", {"accounts": {
+            a.number: {"usage": a.usage.last_good, "at": a.usage.fetched_at,
+                "identity": hashlib.sha256(f"{a.email}\0{a.org_uuid}".encode()).hexdigest()}
+            for a in accounts if a.usage.last_good is not None}})
+
     def dispatch(self, method: str, params: dict) -> dict:
+        if method == "backupCreateKey":
+            key = os.urandom(32)
+            return {"key": base64.b64encode(key).decode("ascii"),
+                "wrappedKey": base64.b64encode(dpapi(key, purpose=b"quota-management.encrypted-backup.v1")).decode("ascii")}
+        if method == "backupOpenKey":
+            wrapped = params.get("wrappedKey")
+            try:
+                if not isinstance(wrapped, str) or not 0 < len(wrapped) <= 4096:
+                    raise ValueError()
+                key = dpapi(base64.b64decode(wrapped, validate=True), decrypt=True, purpose=b"quota-management.encrypted-backup.v1")
+                if len(key) != 32:
+                    raise ValueError()
+            except (ValueError, ConfigError):
+                raise ValueError("This backup cannot be unlocked by this Windows user. No saved accounts were changed.") from None
+            return {"key": base64.b64encode(key).decode("ascii")}
         if method == "snapshot":
             only = params.get("id")
             if only is not None and (not isinstance(only, str) or not only.isdigit() or len(only) > 9):
@@ -329,6 +366,8 @@ class PulseBridge:
             return self.import_existing()
         if method == "importLogin":
             return self.import_login(params)
+        if method in {"resetReview", "resetConsume"}:
+            return self.reset_operation(method, params)
         number = str(params.get("id", ""))
         if method not in {"switch", "remove", "setDisabled"} or not number.isdigit() or len(number) > 9:
             raise ValueError("Unsupported account operation.")
@@ -347,6 +386,66 @@ class PulseBridge:
                 raise ValueError("Expected a boolean disabled state.")
             self.switcher.set_account_disabled(number, params["disabled"])
         return self.snapshot(False)
+
+    def reset_operation(self, method: str, params: dict) -> dict:
+        number = params.get("id")
+        if not isinstance(number, str) or not re.fullmatch(r"\d{1,9}", number):
+            raise ValueError("Invalid reset account.")
+        # Resolve the saved identity again immediately before the RPC. Nothing
+        # is selected, no refresh token is copied/consumed and live auth is never
+        # overwritten. Expired access tokens require the normal safe refresh.
+        with FileLock(self.switcher.lock_file):
+            roster = self.switcher._read_sequence()
+            record = roster["accounts"].get(number)
+            if not record or record.get("disabled"):
+                raise ResetError("This account is missing or excluded. Refresh the dashboard.")
+            active = self.switcher.current_account_number()
+            auth = self.switcher._read_json(self.switcher.auth_file) if number == active and not self.switcher.independent_login(number, roster=roster) else self.switcher._read_account_auth(number)
+            email, account_id, mode = self.switcher._identity_from_auth(auth)
+            if mode != "chatgpt" or email != record.get("email") or account_id != record.get("accountId"):
+                raise ResetError("The saved login does not match this account. Reconnect before reviewing resets.")
+            expected_identity = hashlib.sha256(f"{email}\0{account_id}".encode()).hexdigest()[:16]
+            if params.get("expectedIdentity") != expected_identity:
+                raise ResetError("The account changed while the reset was being reviewed. Reopen its details.")
+        executable = params.get("executable")
+        if not isinstance(executable, str):
+            raise ResetError("Install the official Codex CLI to review resets.")
+        with ResetRPC(executable, auth.get("tokens", {})) as rpc:
+            if method == "resetConsume":
+                credit = params.get("creditId")
+                attempt = params.get("attemptId")
+                if not isinstance(credit, str) or not 0 < len(credit) <= 512:
+                    raise ResetError("Choose a specific reset from a fresh review.")
+                try:
+                    if str(uuid.UUID(attempt)) != attempt:
+                        raise ValueError()
+                except (ValueError, TypeError, AttributeError):
+                    raise ResetError("Invalid redemption attempt. Review the credit again.") from None
+                if params.get("retry") is not True:
+                    before = public_review(rpc.call("account/rateLimits/read"))
+                    selected = next((c for c in before["credits"] if c["id"] == credit), None)
+                    if selected is None or selected["expiresAt"] is not None and selected["expiresAt"] <= iso(time.time()):
+                        raise ResetError("This reset is no longer available. Refresh the review; no credit was spent.")
+                result = rpc.call("account/rateLimitResetCredit/consume", {"creditId": credit, "idempotencyKey": attempt})
+                outcome = result.get("outcome") if isinstance(result, dict) else None
+                if outcome not in {"reset", "alreadyRedeemed", "nothingToReset", "noCredit"}:
+                    raise ResetError("The redemption result is unknown. Retry the same credit to check this attempt safely.")
+            else:
+                outcome = None
+            # The authoritative post-redemption reading, never inferred 100%.
+            review = public_review(rpc.call("account/rateLimits/read"))
+        current = self.switcher._usage_cache.get(number)
+        usage = dict(current.last_good or {}) if current else {}
+        for key in ("five_hour", "weekly", "seven_day"):
+            usage.pop(key, None)
+        for row in review["windows"]:
+            key = "five_hour" if row["durationMinutes"] == 300 else "weekly" if row["durationMinutes"] == 10080 else None
+            if key:
+                usage[key] = {"pct": 100 - row["remainingPercent"], "resets_at": row["resetsAt"]}
+        usage["reset_credits"] = {"available": review["available"], "expires_at": next((c["expiresAt"] for c in review["credits"] if c["expiresAt"]), None)}
+        self.switcher._usage_cache[number] = UsageEntry(last_good=usage, fetched_at=time.time())
+        self._persist_usage(self.switcher.accounts_snapshot(fetch=set()).accounts)
+        return {"review": review, "outcome": outcome, "snapshot": self.snapshot(False)}
 
     def import_login(self, params: dict) -> dict:
         session_id = params.get("sessionId", "")

@@ -1,0 +1,39 @@
+{
+  "source": "https://github.com/lobehub/lobe-icons",
+  "commit": "7d7d0379f18b114a4009dc5cb85a7c375284f31b",
+  "license": "MIT",
+  "copyright": "Copyright (c) 2023 LobeHub",
+  "notes": "Unmodified upstream SVGs. Brand trademarks belong to their respective owners. Bundled for identification; no affiliation or endorsement is implied.",
+  "files": [
+    {
+      "file": "codex.svg",
+      "sha256": "656f91313a645926015cf6b3944a2e6b13339da5b89c5474e68b2791afe1fb70",
+      "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/7d7d0379f18b114a4009dc5cb85a7c375284f31b/packages/static-svg/icons/codex.svg",
+      "upstreamSha256": "d08b4e824cd6727e89617f59e4737273ff53e44c1da849d016dd64dfd08b33e1"
+    },
+    {
+      "file": "claude-color.svg",
+      "sha256": "d4366130584b1027bbc376e3c06a48500d6e862403a69556726d7722610e5561",
+      "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/7d7d0379f18b114a4009dc5cb85a7c375284f31b/packages/static-svg/icons/claude-color.svg",
+      "upstreamSha256": "a3101f3047a119aa11825ad9369510f0c472428c8c52d420e31bc62db44a8364"
+    },
+    {
+      "file": "githubcopilot.svg",
+      "sha256": "7b0a793b3ec1eb3d057bdbdb7b3a3eecb8cc6d57cd4e9e3604a23b3b73e3d25d",
+      "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/7d7d0379f18b114a4009dc5cb85a7c375284f31b/packages/static-svg/icons/githubcopilot.svg",
+      "upstreamSha256": "bbc7fddc13448236e5edea8c399d2072dc40aa5da5bca07f7a2f412405c500a3"
+    },
+    {
+      "file": "gemini-color.svg",
+      "sha256": "4fb5af9c85ca246667d2376d06fc785325e37ce9c9ef3d6606f07ba18602868e",
+      "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/7d7d0379f18b114a4009dc5cb85a7c375284f31b/packages/static-svg/icons/gemini-color.svg",
+      "upstreamSha256": "8ab0a9bafec11f7e69bcb9fc4ffd8f1bc927d1ddcbbb6ff36dee5ae8b5a9d602"
+    },
+    {
+      "file": "cursor.svg",
+      "sha256": "c39ee63dd6a38a9856bd97a1dcb863023eed2b353b9709742e000c8ac90d91d7",
+      "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/7d7d0379f18b114a4009dc5cb85a7c375284f31b/packages/static-svg/icons/cursor.svg",
+      "upstreamSha256": "0cb51bddf264ae108926fd554c063ef40fc1aac3c5c921ddb39ad184e4e5d0ef"
+    }
+  ]
+}

@@ -16,6 +16,8 @@ contextBridge.exposeInMainWorld('pulse', Object.freeze({
   refresh: () => ipcRenderer.invoke('pulse:refresh'),
   refreshAccount: (id) => ipcRenderer.invoke('pulse:refresh-account', id),
   current: () => ipcRenderer.invoke('pulse:current'),
+  resetReview: id => ipcRenderer.invoke('pulse:reset-review', id),
+  resetConsume: (id, creditId) => ipcRenderer.invoke('pulse:reset-consume', id, creditId),
   addCurrent: () => ipcRenderer.invoke('pulse:add-current'),
   startLogin: (mode, identity) => ipcRenderer.invoke('pulse:login-start', mode, identity),
   cancelLogin: () => ipcRenderer.invoke('pulse:login-cancel'),
@@ -32,6 +34,14 @@ contextBridge.exposeInMainWorld('pulse', Object.freeze({
   openDashboard: () => ipcRenderer.invoke('pulse:dashboard'),
   openUsage: () => ipcRenderer.invoke('pulse:usage-link'),
   exportHistory: () => ipcRenderer.invoke('pulse:export'),
+  createBackup: () => ipcRenderer.invoke('pulse:backup'),
+  restoreBackup: () => ipcRenderer.invoke('pulse:restore'),
+  diagnostics: () => ipcRenderer.invoke('pulse:diagnostics'),
+  onOpenAccount: handler => {
+    const listener = (_event, identity) => { if (typeof identity === 'string' && /^[a-f0-9]{16}$/.test(identity)) handler(identity); };
+    ipcRenderer.on('pulse:open-account', listener);
+    return () => ipcRenderer.removeListener('pulse:open-account', listener);
+  },
   onState: (handler) => {
     const listener = (_event, state) => handler(state);
     ipcRenderer.on('pulse:changed', listener);

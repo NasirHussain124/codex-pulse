@@ -48,6 +48,20 @@ def test_reconnect_does_not_expose_error_details():
     assert "a-secret-value" not in json.dumps(row)
 
 
+def test_reset_expiry_survives_public_projection_without_inventing_details():
+    entry = UsageEntry(last_good={"weekly": {"pct": 40}, "reset_credits": {"available": 2, "expires_at": "2026-10-25T10:00:00Z"}}, fetched_at=time.time())
+    row = public_account(account(entry), time.time())
+    assert row["bankedResets"] == 2
+    assert row["resetCredits"] == {"available": 2, "earliestExpiresAt": "2026-10-25T10:00:00Z", "detailsKnown": True}
+    count_only = public_account(account(UsageEntry(last_good={"reset_credits": {"available": 2}}, fetched_at=time.time())), time.time())
+    assert count_only["resetCredits"]["earliestExpiresAt"] is None
+    assert count_only["resetCredits"]["detailsKnown"] is False
+    for count in [True, -1, 1.5, float("nan")]:
+        invalid = public_account(account(UsageEntry(last_good={"reset_credits": {"available": count, "expires_at": "not-a-time"}})), time.time())
+        assert invalid["bankedResets"] is None
+        assert invalid["resetCredits"]["earliestExpiresAt"] is None
+
+
 @pytest.mark.skipif(sys.platform != "win32", reason="Windows vault")
 def test_vault_roundtrip_without_plaintext_backups(tmp_path):
     switcher = SecureSwitcher(tmp_path / "pulse", tmp_path / "codex")
@@ -58,6 +72,21 @@ def test_vault_roundtrip_without_plaintext_backups(tmp_path):
     assert "secret-refresh" not in path.read_text()
     assert switcher._read_account_auth("1") == value
     assert not list(path.parent.glob("*.tmp"))
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows DPAPI")
+def test_backup_key_is_independent_of_chromium_and_scoped_to_its_purpose(tmp_path):
+    bridge = PulseBridge(tmp_path / "vault", tmp_path / "codex")
+    bundle = bridge.dispatch("backupCreateKey", {})
+    reopened = bridge.dispatch("backupOpenKey", {"wrappedKey": bundle["wrappedKey"]})
+    assert reopened["key"] == bundle["key"]
+    assert len(base64.b64decode(reopened["key"])) == 32
+    # An ordinary account ciphertext cannot be used as a backup key oracle.
+    wrong_purpose = base64.b64encode(dpapi(b"x" * 32)).decode()
+    with pytest.raises(ValueError, match="cannot be unlocked"):
+        bridge.dispatch("backupOpenKey", {"wrappedKey": wrong_purpose})
+    with pytest.raises(ValueError):
+        bridge.dispatch("backupOpenKey", {"wrappedKey": "not base64"})
 
 
 def test_corrupt_roster_is_not_treated_as_empty(tmp_path):

@@ -7,7 +7,7 @@ test('tray popover anchors below a top taskbar and above a bottom taskbar', () =
   const top = popoverBounds({ x: 1840, y: 5, width: 24, height: 24 }, area, 4);
   const bottom = popoverBounds({ x: 1840, y: 1084, width: 24, height: 24 }, area, 4);
   assert.equal(top.y, 56); assert.equal(bottom.y + bottom.height, 1072);
-  assert.equal(top.width, 400); assert.equal(top.height, 334);
+  assert.equal(top.width, 400); assert.equal(top.height, 370);
 });
 test('side taskbars, tray overflow and negative monitor origins remain on-screen', () => {
   for (const display of [area, { x: -1600, y: -100, width: 1600, height: 900 }]) {

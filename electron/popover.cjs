@@ -1,7 +1,7 @@
 // Pure DIP geometry: works with top/bottom/side taskbars and negative monitor origins.
 function popoverBounds(anchor, area, count = 0) {
   const gap = 8, width = Math.max(1, Math.min(400, area.width - gap * 2));
-  const height = Math.max(1, Math.min(count === 0 ? 320 : Math.max(244, 126 + Math.ceil(Math.max(0, count) / 2) * 104), 626, area.height - gap * 2));
+  const height = Math.max(1, Math.min(count === 0 ? 320 : Math.max(276, 162 + Math.ceil(Math.max(0, count) / 2) * 104), 626, area.height - gap * 2));
   const cx = anchor.x + anchor.width / 2, cy = anchor.y + anchor.height / 2;
   let x = cx - width / 2, y;
   if (cy <= area.y) y = area.y + gap;

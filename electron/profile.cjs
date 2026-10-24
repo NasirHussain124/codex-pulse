@@ -6,7 +6,8 @@ const { createHash } = require('node:crypto');
 // profile has the same physical location when launched from a host or Explorer.
 const profilePath = home => path.join(home, '.quota-management');
 const files = ['settings.json', 'snapshot.json', 'history.json', 'events.json',
-  'mobile-vault.json', 'Local State', 'vault/readings.json'];
+  'mobile-vault.json', 'Local State', 'vault/readings.json', 'reset-attempts.json',
+  'providers-vault.json', 'provider-reports.json', 'alerts.json'];
 
 function legacyProfiles({ appData, localAppData }) {
   const roots = [path.join(appData, 'Codex Pulse')];
@@ -32,7 +33,8 @@ function readFile(root, relative, required = false) {
     if (stat.isSymbolicLink() || (i < parts.length ? !stat.isDirectory() : !stat.isFile())) {
       throw new Error('A saved profile contains an unsupported link or file. Its original data was not changed.');
     }
-    if (i === parts.length && stat.size > 32 * 1024 * 1024) throw new Error('A saved profile file is too large to migrate safely.');
+    const limit = /^vault\/codex\/credentials\//.test(relative) ? 1024 * 1024 : 32 * 1024 * 1024;
+    if (i === parts.length && stat.size > limit) throw new Error('A saved profile file is too large to migrate safely.');
   }
   return fs.readFileSync(path.join(root, relative));
 }
@@ -67,6 +69,7 @@ function inspectProfile(root) {
   }
   if (!copy.size) return null;
   const hash = createHash('sha256');
+  if ([...copy.values()].reduce((sum, bytes) => sum + bytes.length, 0) > 64 * 1024 * 1024) throw new Error('The saved profile exceeds the safe recovery size. Original files were preserved.');
   for (const [filename, bytes] of [...copy].sort(([a], [b]) => a.localeCompare(b))) hash.update(filename).update('\0').update(bytes);
   return { root, count: ids.length, copy, fingerprint: hash.digest('hex') };
 }
@@ -110,4 +113,4 @@ function prepareProfile({ destination, sources }) {
   }
 }
 
-module.exports = { profilePath, legacyProfiles, prepareProfile };
+module.exports = { profilePath, legacyProfiles, prepareProfile, inspectProfile, profileFiles: files };

@@ -29,6 +29,19 @@ SOFTWARE.
 Other packaged dependencies retain their respective license files. Electron
 distributions include LICENSE.electron.txt and LICENSES.chromium.html.
 
+## Provider marks — Lobe Icons
+
+Selected Codex, GitHub Copilot, Claude, Gemini and Cursor SVGs are bundled from
+LobeHub's MIT-licensed Lobe Icons, commit
+`7d7d0379f18b114a4009dc5cb85a7c375284f31b`. Copyright (c) 2023 LobeHub.
+The complete MIT notice and exact source URLs/SHA-256 hashes ship in
+`public/providers/LICENSE.txt` and `public/providers/SOURCES.json`
+(inside the installed app: `dist/providers/`).
+No runtime CDN requests are made. Brand trademarks belong to their owners;
+these marks identify integrations and imply no affiliation or endorsement.
+Quota management's Q / dual-window meter is original application artwork,
+not a provider mark.
+
 Android uses ZXing Android Embedded / ZXing core and AndroidX support libraries
 under Apache-2.0. Its packaged NOTICE.txt lists upstream sources and attribution;
 the app exposes it through Open-source notices. Test-only Robolectric/JUnit are

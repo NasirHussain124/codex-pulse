@@ -19,7 +19,7 @@ export function Dropdown({ label, value, options, onChange, placeholder = 'Selec
   const [position, setPosition] = useState<{ left: number; top: number; width: number; maxHeight: number } | null>(null);
   const selected = options.findIndex(option => option.value === String(value));
   const unavailable = disabled || !options.length;
-  const show = () => { if (!unavailable) { setActive(Math.max(0, selected)); setOpen(true); } };
+  const show = () => { if (!unavailable) { trigger.current?.scrollIntoView({ block: 'nearest', inline: 'nearest' }); setActive(Math.max(0, selected)); setOpen(true); } };
   const choose = (index: number) => {
     if (!options[index]) return;
     onChange(options[index].value); setOpen(false); trigger.current?.focus();

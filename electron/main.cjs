@@ -5,13 +5,17 @@ const fs = require('node:fs');
 const { pathToFileURL } = require('node:url');
 const { Engine } = require('./engine.cjs');
 const { createStore } = require('./store.cjs');
-const { LoginManager, DEVICE_URL } = require('./login.cjs');
+const { LoginManager, DEVICE_URL, findCodex } = require('./login.cjs');
+const { randomUUID } = require('node:crypto');
 const { loadLocalAccounts, validSnapshot } = require('./bootstrap.cjs');
 const { MobileBridge } = require('./mobile.cjs');
 const { copyPairingLink } = require('./pairing.cjs');
 const { APP_NAME } = require('./branding.cjs');
 const { profilePath, legacyProfiles, prepareProfile } = require('./profile.cjs');
 const { popoverBounds } = require('./popover.cjs');
+const { MobileRecovery, networkEntries } = require('./network.cjs');
+const { createBackup, readBackup, stageRestore, applyRestore, backupEnvelope } = require('./backup.cjs');
+const { actionableAlerts } = require('./alerts.cjs');
 
 app.setAppUserModelId('com.codexpulse.desktop');
 protocol.registerSchemesAsPrivileged([{ scheme: 'pulse', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
@@ -29,6 +33,8 @@ const profileDirectory = smoke || lifecycle
 // Migrate before Electron initializes Local State: Windows safeStorage pairing
 // keys must move together with the encrypted phone vault, not after ready.
 try {
+  const restoreId = process.argv.find(arg => arg.startsWith('--apply-quota-restore='))?.split('=')[1];
+  if (restoreId && !smoke && !lifecycle) applyRestore(profileDirectory, restoreId);
   if (recoveryTest) prepareProfile({ destination: profileDirectory, sources: legacyProfiles({
     appData: path.join(testRoot, 'Roaming'), localAppData: path.join(testRoot, 'Local') }) });
   else if (!smoke && !lifecycle) prepareProfile({ destination: profileDirectory,
@@ -42,7 +48,7 @@ const demo = process.argv.includes('--demo') || smoke;
 const primaryInstance = app.requestSingleInstanceLock();
 if (!primaryInstance) app.quit();
 let mainWindow, widgetWindow, tray, engine, store, login, pollTimer, refreshing = false, quitting = false;
-let mobile;
+let mobile, mobileRecovery;
 let quickWindow, quickReady = false, quickWanted = false, lastQuickBlur = 0;
 let snapshot = { schemaVersion: 1, generatedAt: null, accounts: [], engine: { name: 'ccswap', version: '0.39.2', secureStorage: 'Windows DPAPI' } };
 let engineError = null, history = [], events = [], initialized = false, revision = 0, startupSource = 'loading';
@@ -82,8 +88,32 @@ function notifyLow() {
     }
   }
 }
+function notifyActions(previous) {
+  if (demo) return;
+  let seen = store.load('alerts', {});
+  if (!seen || typeof seen !== 'object' || Array.isArray(seen)) seen = {};
+  const now = Date.now();
+  seen = Object.fromEntries(Object.entries(seen).filter(([, at]) => typeof at === 'number' && now - at < 8 * 86400000));
+  for (const item of actionableAlerts(snapshot, previous, store.settings, now)) {
+    if (seen[item.key]) continue;
+    seen[item.key] = now;
+    if (Notification.isSupported()) {
+      const note = new Notification({ title: item.title, body: item.message, silent: false });
+      note.on('click', () => {
+        showDashboard();
+        const send = () => mainWindow?.webContents.send('pulse:open-account', item.identity);
+        if (mainWindow?.webContents.isLoadingMainFrame()) mainWindow.webContents.once('did-finish-load', send);
+        else send();
+      });
+      note.show();
+    }
+    event('advice', item.title);
+  }
+  store.save('alerts', Object.fromEntries(Object.entries(seen).slice(-1000)));
+}
 function accept(result, record = false) {
   if (!validSnapshot(result)) throw new Error('The local account engine returned an invalid roster. Your saved logins were not changed.');
+  const previous = snapshot;
   snapshot = result; engineError = null; initialized = true;
   store.save('snapshot', snapshot);
   if (record && snapshot.accounts.some(a => a.fetchedAt)) {
@@ -95,6 +125,7 @@ function accept(result, record = false) {
       history = history.slice(-2000); store.save('history', history);
     }
     notifyLow();
+    notifyActions(previous);
   }
   publish(); return state();
 }
@@ -202,7 +233,7 @@ async function operation(method, params = {}) {
 }
 
 app.on('second-instance', showDashboard);
-app.on('before-quit', () => { quitting = true; clearInterval(pollTimer); login?.stop(); engine?.stop(); void mobile?.stop(); });
+app.on('before-quit', () => { quitting = true; clearInterval(pollTimer); mobileRecovery?.stop(); login?.stop(); engine?.stop(); void mobile?.stop(); });
 app.on('window-all-closed', () => { if (!tray) app.quit(); });
 app.whenReady().then(async () => {
   if (!primaryInstance) return;
@@ -236,14 +267,21 @@ app.whenReady().then(async () => {
   const getMobile = () => {
     if (demo || lifecycle) throw new Error('Phone pairing is available in your real desktop workspace, not sample mode.');
     if (!safeStorage.isEncryptionAvailable()) throw new Error('Windows encryption is unavailable. Phone pairing was not enabled.');
-    if (!mobile) mobile = new MobileBridge({ getState: state,
+    if (!mobile) mobile = new MobileBridge({ getState: state, discoverable: () => store.settings.mobileDiscovery,
       readSecret: () => { const encrypted = store.load('mobile-vault', null); return encrypted ? JSON.parse(safeStorage.decryptString(Buffer.from(encrypted, 'base64'))) : null; },
       writeSecret: value => store.save('mobile-vault', safeStorage.encryptString(JSON.stringify(value)).toString('base64')) });
     return mobile;
   };
-  handle('pulse:mobile-status', () => getMobile().status());
-  handle('pulse:mobile-start', (address) => getMobile().start(address));
-  handle('pulse:mobile-stop', () => getMobile().stop());
+  mobileRecovery = new MobileRecovery({ getSettings: () => store.settings, bridge: getMobile, changed: publish });
+  handle('pulse:mobile-status', () => ({ ...getMobile().status(), autoResume: store.settings.mobileResume,
+    discovery: store.settings.mobileDiscovery, recovery: mobileRecovery.message }));
+  handle('pulse:mobile-start', async (address) => {
+    const selected = networkEntries().find(entry => entry.address === address);
+    if (!selected) throw new Error('Choose an available private LAN or Tailscale adapter.');
+    const result = await getMobile().start(address);
+    store.update({ mobileAddress: address, mobileTransport: selected.kind }); publish(); return result;
+  });
+  handle('pulse:mobile-stop', () => { store.update({ mobileResume: false }); publish(); return getMobile().stop(); });
   handle('pulse:mobile-revoke', (id) => getMobile().revoke(id));
   handle('pulse:login-copy-code', () => {
     const code = login?.status?.code;
@@ -268,6 +306,48 @@ app.whenReady().then(async () => {
   handle('pulse:refresh', async () => { if (!initialized && !demo) await bootstrap(); return refresh(); });
   handle('pulse:refresh-account', (value) => refresh(id(value)));
   handle('pulse:current', () => engine.request('current'));
+  handle('pulse:reset-review', async value => {
+    if (demo) throw new Error('Reset review requires a real saved account.');
+    const account = snapshot.accounts.find(a => a.id === id(value));
+    if (!account) throw new Error('This account is no longer saved.');
+    const executable = findCodex();
+    if (!executable) throw new Error('Install the official Codex CLI to review earned resets.');
+    const result = await engine.request('resetReview', { id: account.id, expectedIdentity: account.identity, executable });
+    const attempts = store.load('reset-attempts', {});
+    const pending = Object.keys(attempts).find(key => key.startsWith(account.identity + ':'));
+    if (pending) result.review.pendingCreditId = pending.slice(account.identity.length + 1);
+    accept(result.snapshot, true); return result.review;
+  });
+  let redeemBusy = false;
+  handle('pulse:reset-consume', async (value, creditId) => {
+    if (demo || redeemBusy) throw new Error('A reset cannot be redeemed in this state.');
+    const account = snapshot.accounts.find(a => a.id === id(value));
+    if (!account || account.disabled || typeof creditId !== 'string' || !creditId.length || creditId.length > 512) throw new Error('Refresh the account and choose a specific reset.');
+    const executable = findCodex();
+    if (!executable) throw new Error('Install the official Codex CLI to redeem earned resets.');
+    redeemBusy = true;
+    try {
+      const confirmation = await dialog.showMessageBox(mainWindow, { type: 'question', title: 'Use one earned reset?',
+        message: `Use one Codex reset for ${store.settings.accounts[account.identity]?.label || account.email}?`,
+        detail: 'This may spend a banked reset credit. Natural quota resets are free. The provider checks eligibility. Running sessions and selected accounts will not be changed.',
+        buttons: ['Cancel', 'Use this reset'], defaultId: 0, cancelId: 0, noLink: true });
+      if (confirmation.response !== 1) return { canceled: true };
+      const attempts = store.load('reset-attempts', {});
+      const key = account.identity + ':' + creditId;
+      if (Object.keys(attempts).some(other => other.startsWith(account.identity + ':') && other !== key)) throw new Error('An earlier redemption has an uncertain result. Check or retry that same credit before choosing another.');
+      const previous = attempts[key];
+      const attemptId = previous?.id || randomUUID();
+      // Persist before sending. A crash/timeout must not turn a retry into a
+      // second logical redemption. No mutation is retried on startup.
+      attempts[key] = { id: attemptId, createdAt: previous?.createdAt || new Date().toISOString() };
+      store.save('reset-attempts', attempts);
+      const result = await engine.request('resetConsume', { id: account.id, expectedIdentity: account.identity, executable, creditId, attemptId, retry: Boolean(previous) });
+      accept(result.snapshot, true);
+      delete attempts[key]; store.save('reset-attempts', attempts);
+      event('reset', result.outcome === 'reset' || result.outcome === 'alreadyRedeemed' ? 'Earned reset verified; refreshed provider limits' : 'Reset eligibility checked; no credit consumed');
+      return { review: result.review, outcome: result.outcome, canceled: false };
+    } finally { redeemBusy = false; }
+  });
   handle('pulse:login-start', (mode, expectedIdentity = null) => {
     if (demo) throw new Error('Open the Windows app without preview mode to sign in.');
     return login.start(mode, expectedIdentity);
@@ -297,6 +377,8 @@ app.whenReady().then(async () => {
       } catch { store.update({ startAtLogin: before }); throw new Error('Windows could not update startup registration. Your previous setting was kept.'); }
     }
     widgetWindow?.setAlwaysOnTop(store.settings.widgetTop);
+    mobile?.updateDiscovery();
+    if (!demo && !lifecycle) void mobileRecovery.tick();
     schedule(); publish(); return store.settings;
   });
   handle('pulse:widget', () => { showPinnedWidget(); return true; });
@@ -312,7 +394,52 @@ app.whenReady().then(async () => {
     const csv = rows.map(row => row.map(value => '"' + String(value ?? '').replaceAll('"', '""') + '"').join(',')).join('\r\n');
     fs.writeFileSync(destination.filePath, csv, 'utf8'); return true;
   });
-  const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><rect x="2" y="2" width="28" height="28" rx="9" fill="#8c73ec"/><path d="M6 17h6l3-8 4 15 3-7h4" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"64\" height=\"64\" viewBox=\"0 0 64 64\" fill=\"none\"><title>Quota management</title><rect width=\"64\" height=\"64\" rx=\"19\" fill=\"#25212E\"/><circle cx=\"30\" cy=\"30\" r=\"17\" stroke=\"#DDCFFF\" stroke-width=\"6.5\"/><path d=\"M30 13A17 17 0 0 1 47 30\" stroke=\"#86D8BD\" stroke-width=\"6.5\" stroke-linecap=\"round\"/><path d=\"M40 40L49 49\" stroke=\"#DDCFFF\" stroke-width=\"6.5\" stroke-linecap=\"round\"/><path d=\"M24 27H36M24 34H31\" stroke=\"#DDCFFF\" stroke-width=\"4\" stroke-linecap=\"round\"/></svg>";
+  handle('pulse:backup', async () => {
+    if (demo || lifecycle) throw new Error('Backups are available only for your real saved profile.');
+    const target = await dialog.showSaveDialog(mainWindow, { defaultPath: `Quota-management-${new Date().toISOString().slice(0, 10)}.qmbak`, filters: [{ name: 'Encrypted Quota management backup', extensions: ['qmbak'] }] });
+    if (target.canceled || !target.filePath) return false;
+    // DPAPI-wrapped per-backup key is independent of Chromium Local State, so
+    // this backup remains recoverable after reinstall on the same Windows user.
+    const bundle = await engine.request('backupCreateKey');
+    const backup = createBackup(profileDirectory, bundle, app.getVersion());
+    fs.writeFileSync(target.filePath, JSON.stringify(backup), { flag: 'wx', mode: 0o600 });
+    event('backup', 'Created a Windows-account-encrypted recovery backup'); publish(); return true;
+  });
+  let restoring = false;
+  handle('pulse:restore', async () => {
+    if (demo || lifecycle || restoring || redeemBusy || login.active) throw new Error('Finish the current sign-in or reset before restoring your profile.');
+    restoring = true;
+    try {
+      const chosen = await dialog.showOpenDialog(mainWindow, { properties: ['openFile'], filters: [{ name: 'Encrypted Quota management backup', extensions: ['qmbak'] }] });
+      if (chosen.canceled || !chosen.filePaths[0]) return false;
+      const filename = chosen.filePaths[0], stat = fs.lstatSync(filename);
+      if (!stat.isFile() || stat.isSymbolicLink() || stat.size > 128 * 1024 * 1024) throw new Error('Choose a regular encrypted backup smaller than 128 MB.');
+      const bytes = fs.readFileSync(filename);
+      const bundle = await engine.request('backupOpenKey', { wrappedKey: backupEnvelope(bytes).wrappedKey });
+      const backup = readBackup(bytes, bundle.key);
+      const answer = await dialog.showMessageBox(mainWindow, { type: 'warning', title: 'Restore saved accounts and pairing?',
+        message: 'Restore this encrypted backup and restart Quota management?',
+        detail: `Backup: ${backup.createdAt ? new Date(backup.createdAt).toLocaleString() : 'date unknown'} · version ${backup.version}\n\nThis replaces Quota management accounts, phone pairings, readings and settings with the backup. Your current profile is preserved in a separate recovery folder. Existing file-backed Codex/ChatGPT sessions are not modified. Phone sharing stays paused until you enable it again.`,
+        buttons: ['Cancel', 'Restore and restart'], defaultId: 0, cancelId: 0, noLink: true });
+      if (answer.response !== 1) return false;
+      const staged = stageRestore(profileDirectory, backup);
+      const args = process.argv.slice(1).filter(arg => !arg.startsWith('--apply-quota-restore='));
+      app.relaunch({ args: [...args, `--apply-quota-restore=${staged.id}`] });
+      app.quit(); return true;
+    } finally { restoring = false; }
+  });
+  handle('pulse:diagnostics', () => {
+    const status = mobile?.status();
+    return { version: app.getVersion(), packaged: app.isPackaged, profile: 'Independent Windows profile',
+      initialized, accounts: snapshot.accounts.length, ready: snapshot.accounts.filter(a => a.status === 'ready').length,
+      engine: { available: !engineError, collectorRunning: Boolean(engine.child), lastReading: snapshot.generatedAt }, cli: { installed: Boolean(findCodex()) },
+      phone: { enabled: Boolean(status?.enabled), transport: store.settings.mobileTransport || 'lan', pairedDevices: status?.devices?.length || 0,
+        autoResume: store.settings.mobileResume, discovery: store.settings.mobileDiscovery, recovery: mobileRecovery.message || status?.error || null },
+      network: networkEntries().map(entry => ({ kind: entry.kind, adapter: entry.adapter })),
+      startup: app.isPackaged ? app.getLoginItemSettings().openAtLogin : false,
+      encryption: safeStorage.isEncryptionAvailable(), observedAt: new Date().toISOString() };
+  });
   // NativeImage SVG support varies by Windows build; use the packaged ICO.
   const iconFile = path.join(app.getAppPath(), 'dist', 'pulse.ico');
   const trayIcon = fs.existsSync(iconFile) ? nativeImage.createFromPath(iconFile) : nativeImage.createFromDataURL('data:image/svg+xml;base64,' + Buffer.from(svg).toString('base64'));
@@ -325,7 +452,8 @@ app.whenReady().then(async () => {
   screen.on('display-removed', hideQuickView);
   powerMonitor.on('suspend', hideQuickView);
   mainWindow = createWindow();
-  if (!lifecycle) { powerMonitor.on('resume', refresh); schedule(); }
+  if (!lifecycle) { powerMonitor.on('resume', () => { refresh(); if (!demo) void mobileRecovery.tick(); }); schedule(); }
+  if (!demo && !lifecycle) void mobileRecovery.start();
   if (!demo && !lifecycle) refresh();
   if (lifecycle) {
     mainWindow.webContents.once('did-finish-load', async () => {

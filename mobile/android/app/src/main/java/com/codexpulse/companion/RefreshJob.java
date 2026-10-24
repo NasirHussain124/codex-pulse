@@ -19,8 +19,9 @@ public final class RefreshJob extends JobService {
     }
     static void schedule(Context context) {
         JobScheduler scheduler = context.getSystemService(JobScheduler.class);
-        JobInfo job = new JobInfo.Builder(47831, new ComponentName(context, RefreshJob.class)).setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY).setPeriodic(15 * 60 * 1000L).build();
-        if (scheduler.getPendingJob(47831) == null) scheduler.schedule(job);
+        JobInfo job = new JobInfo.Builder(47831, new ComponentName(context, RefreshJob.class)).setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY).setPeriodic(15 * 60 * 1000L).setPersisted(true).build();
+        JobInfo prior = scheduler.getPendingJob(47831);
+        if (prior == null || !prior.isPersisted()) scheduler.schedule(job);
     }
     @Override public boolean onStartJob(JobParameters params) {
         refresh(this, () -> jobFinished(params, false));

@@ -8,7 +8,7 @@ const patterns = [ /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/, /gh[pous
   /eyJ[A-Za-z0-9_-]{15,}\.[A-Za-z0-9_-]{15,}\.[A-Za-z0-9_-]{15,}/ ];
 const issues = [];
 for (const file of files) {
-  if (/(?:^|\/)(?:auth\.json|sequence\.json|mobile-vault\.json|snapshot\.json|history\.json|health\.json|\.env(?:\..*)?)$/.test(file) && !file.endsWith('.env.example') || /(?:^|\/)(?:vault|pending-logins|backups|node_modules|release)\//.test(file) || /\.(?:exe|apk|jks|keystore|pfx|p12|key)$/i.test(file)) { issues.push(file); continue; }
+  if (/(?:^|\/)(?:auth\.json|sequence\.json|mobile-vault\.json|providers-vault\.json|provider-reports\.json|reset-attempts\.json|alerts\.json|snapshot\.json|history\.json|health\.json|\.env(?:\..*)?)$/.test(file) && !file.endsWith('.env.example') || /(?:^|\/)(?:vault|pending-logins|backups|node_modules|release)\//.test(file) || /\.(?:exe|apk|jks|keystore|pfx|p12|key|qmbak)$/i.test(file)) { issues.push(file); continue; }
   const content = fs.readFileSync(path.join(root, file));
   if (content.length > 2 * 1024 * 1024 || patterns.some(pattern => pattern.test(content.toString('utf8')))) issues.push(file);
 }

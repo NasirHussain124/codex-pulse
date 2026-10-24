@@ -3,6 +3,8 @@ import type { Account, AppState, Settings } from './types';
 import { age } from './model';
 import { dualWidgetReading } from './widgetModel';
 import { QuotaMark } from './QuotaMark';
+import { recommend } from './recommendations';
+import { label } from './model';
 
 export function QuotaPills({ accounts, settings, open, actionLabel = 'Open account details' }: { accounts: Account[]; settings: Settings; open?: (account: Account) => void; actionLabel?: string }) {
   return <section className="quota-cards" aria-label="All saved Codex accounts">{accounts.map(account => {
@@ -40,8 +42,10 @@ export function QuickView({ state, preview, busy, refresh, close, pin, dashboard
 }) {
   const accounts = [...state.snapshot.accounts].sort((a, b) => Number(b.selected) - Number(a.selected) || Number(a.id) - Number(b.id));
   const saved = state.engineError || accounts.some(a => a.status !== 'ready' || !a.fetchedAt || Date.now() - Date.parse(a.fetchedAt) > 300000);
+  const advice = recommend(state.snapshot.accounts, state.settings, state.history);
   return <main className="quick-view" aria-label="Quick usage">
     <header className="quick-heading"><div className="widget-brand"><QuotaMark size={30} /><div><h1>Quota management</h1><p>Remaining capacity</p></div></div><button className="icon-btn" aria-label="Refresh quota" disabled={busy || state.refreshing} onClick={refresh}><RefreshCw size={16} className={state.refreshing ? 'spin' : ''} /></button><button className="icon-btn" aria-label="Close quick view" onClick={close}><X size={17} /></button></header>
+    {advice.account && <button className="quick-recommendation" onClick={dashboard}><span>{advice.action === 'review-reset' ? 'Expiring reset' : advice.action === 'wait' ? 'Reset coming up' : 'Recommended'}</span><strong>{label(advice.account, state.settings)}</strong><ArrowUpRight size={13} /></button>}
     <div className="quick-body">{accounts.length ? <QuotaPills accounts={accounts} settings={state.settings} open={dashboard} actionLabel="Open dashboard" /> : <div className="widget-empty"><QuotaMark size={38} /><h2>A little more headroom.</h2><p>Add your Codex accounts in the dashboard.</p><button className="solid-btn" onClick={dashboard}>Open dashboard <ArrowUpRight size={15} /></button></div>}</div>
     <footer className="quick-footer"><span role="status">{preview ? 'Sample preview' : state.refreshing ? 'Refreshing…' : saved ? 'Saved readings' : age(state.snapshot.generatedAt)}</span><button aria-label="Pin usage widget" onClick={pin}><Pin size={14} /> Pin</button><button onClick={dashboard}>Dashboard <ArrowUpRight size={14} /></button></footer>
   </main>;

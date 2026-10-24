@@ -19,7 +19,8 @@ import javax.net.ssl.X509TrustManager;
 
 public final class CompanionClient {
     private final PhoneStore store;
-    public CompanionClient(Context context) { store = new PhoneStore(context); }
+    private final Context context;
+    public CompanionClient(Context context) { this.context = context.getApplicationContext(); store = new PhoneStore(context); }
     static boolean pinMatches(X509Certificate cert, String expected) throws Exception {
         byte[] actual = MessageDigest.getInstance("SHA-256").digest(cert.getEncoded());
         byte[] pin = new byte[32]; for (int i = 0; i < 32; i++) pin[i] = (byte)Integer.parseInt(expected.substring(i * 2, i * 2 + 2), 16);
@@ -83,13 +84,21 @@ public final class CompanionClient {
         JSONObject connection = store.read().optJSONObject("connection");
         if (connection == null) throw new Exception("Pair your PC to see its usage readings.");
         try {
-            JSONObject snapshot = request(connection, "/v1/snapshot", null, connection.getString("token"));
+            EndpointRecovery.Result recovered = EndpointRecovery.fetch(connection,
+                candidate -> request(candidate, "/v1/snapshot", null, candidate.getString("token")),
+                pin -> PcDiscovery.find(context, pin));
+            JSONObject snapshot = recovered.snapshot;
+            connection = recovered.connection;
             if (snapshot.getInt("schemaVersion") != 1 || snapshot.getJSONArray("accounts").length() > 200) throw new Exception("Unsupported PC response.");
-            synchronized (PhoneStore.class) { JSONObject data = store.read(); data.put("snapshot", snapshot).put("receivedAt", System.currentTimeMillis()).remove("error"); store.write(data); }
+            synchronized (PhoneStore.class) {
+                JSONObject data = store.read(), current = data.optJSONObject("connection");
+                if (current == null || !current.optString("id").equals(connection.optString("id")) || !current.optString("token").equals(connection.optString("token"))) throw new Exception("The paired PC changed while refreshing. Try again.");
+                data.put("connection", connection).put("snapshot", snapshot).put("receivedAt", System.currentTimeMillis()).remove("error"); store.write(data);
+            }
             return snapshot;
         } catch (Exception error) {
-            String message = error instanceof javax.net.ssl.SSLException ? "PC certificate could not be verified. Check both devices’ clocks, then pair again from your PC. Do not bypass certificate protection." : error.getMessage() != null && error.getMessage().startsWith("Pairing expired") ? error.getMessage() : "PC offline or unreachable. Showing the last saved readings. Keep Quota management running and use the same private Wi-Fi.";
-            synchronized (PhoneStore.class) { JSONObject data = store.read(); data.put("error", message); store.write(data); }
+            String message = error instanceof javax.net.ssl.SSLException ? "PC certificate could not be verified. Check both devices’ clocks, then pair again from your PC. Do not bypass certificate protection." : error.getMessage() != null && error.getMessage().startsWith("Pairing expired") ? error.getMessage() : "PC offline or unreachable. Showing saved readings. Keep the PC awake with Quota management running. Use the same private Wi-Fi or enable Tailscale on both devices.";
+            synchronized (PhoneStore.class) { JSONObject data = store.read(), current = data.optJSONObject("connection"); if (current != null && current.optString("id").equals(connection.optString("id"))) { data.put("error", message); store.write(data); } }
             throw new Exception(message);
         }
     }
